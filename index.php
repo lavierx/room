@@ -856,7 +856,7 @@ EOM;
 		            <p><i class="0large medium material-icons" style='float:left'>blur_linear</i>
 		            <span class='min' style='font-size:19px;font-weight:_bold'>部屋定員管理くん</span>
 		            <br><span class='min' style='font-size:19px;font-weight:_bold'>練習会オペ用</span>
-		            <br/><a style="color:white;" href=https://github.com/lavierx/krepo-2>https://github.com/lavierx/krepo-2</a>
+		            <br/><a style="color:white;" href=https://github.com/lavierx/room>https://github.com/lavierx/room</a>
 		            </p>
 		            <br clear=all>     
 		            <p class="grey-text text-lighten-4 addr">　<i class="material-icons">build</i><a style='color:white;font-size:19px;' href={$url}?set=1 _data-lity>部屋設定</a></p>
