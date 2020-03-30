@@ -4,6 +4,7 @@ include("pre.php");
 include("define.php");//サーバ定義
 //配列をファイルから読み込み
 $_set = unserialize(file_get_contents("_set.dat"));//設定データ
+$_set2 = unserialize(file_get_contents("_set2.dat"));//設定データ
 //配列をファイルから読み込み
 $_entry = unserialize(file_get_contents("_entry.dat"));//入室データ
 //print_r($_entry);
@@ -66,14 +67,18 @@ if($_POST[action]<>""):
 		$_set[$key][room]=$_POST[room][$key];
 		$_set[$key][capa]=$_POST[capa][$key];
 	}
+	$_set2[info]=$_POST[info];
 	//print_r($_set);
 
 	if($_POST[action]=="1"):
 	  	//配列の中身をファイルに保存
 	  	file_put_contents("_set.dat", serialize($_set));
+	  	file_put_contents("_set2.dat", serialize($_set2));
 	elseif($_POST[action]=="2")://リセット
 		$_set="";//初期化
 	  	file_put_contents("_set.dat", serialize($_set));
+		$_set2="";//初期化
+	  	file_put_contents("_set2.dat", serialize($_set2));
 		$_entry="";//初期化
 	  	file_put_contents("_entry.dat", serialize($_entry));
   	endif;
@@ -612,6 +617,16 @@ class showHtml{
 		    border-radius: 10px;
 			box-shadow: 2px 2px 4px inset;
 		}
+		.f2 {
+		    background: rgba(255,255,255, 0.1);
+		    padding: 20px;
+		    margin: -30px -7px -15px -7px;
+		    color: rgba(255,255,255,.7) !important;
+		    border-radius: 10px;
+			box-shadow: 2px 2px 4px inset;
+		    border-radius: 20px;
+	    	box-shadow: 0 10px 20px -10px #777777;
+		}
 		.min{
 		    font-family: FontAwesome,"Times New Roman","ヒラギノ明朝 ProN W6", "HiraMinProN-W6","_UD デジタル 教科書体 NK-R","游明朝体", "Yu Mincho", YuMincho,"游ゴシック体", YuGothic, "游ゴシック Medium", "YuGothic M","ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", "メイリオ", Meiryo, sans-serif !important;
 		    font-weight: normal !important; 
@@ -636,6 +651,7 @@ EOM;
 	public function html_c($mid){//メイン画面
 
 		global $_set;
+		global $_set2;
 		global $user;
 		global $NT2;
 
@@ -678,7 +694,7 @@ EOM;
 		    <div class="col s12">
 		      <div class="row" style="margin:0px 0px;">
 		        <div class="input-field col s12">
-		        	<img src="{$person[1]}" style='width:76px;padding-right:10px;'><span class=_TEN style='font-size:33px;'>{$person[0]}</span>
+		        	<img src="{$person[1]}" style='width:56px;padding-right:10px;'><span class=_TEN style='font-size:27px;'>{$person[0]} {$mid}</span>
 		        </div>
 		      </div>
 		    </div>
@@ -703,7 +719,7 @@ EOM;
 		<BODY><DIV class="container animated fadeIn">
 
 			<nav class="cyan darken-2">
-			<p style="font-weight:500;text-shadow: #fff 0px 1px 2px, #000 0px -1px 1px;"><a class=min href={$url}>部屋定員管理くん {$NT2}</a></p>
+			<p style="font-weight:700;_text-shadow: #fff 0px 1px 2px, #000 0px -1px 1px;"><a class=min href={$url}>部屋定員管理くん <span class=TEN>{$NT2}</span></a></p>
 			</nav>
 
 			<DIV id=contents>
@@ -721,6 +737,12 @@ EOM;
 			{$html_r}	
 
 			</form>
+
+			<div class="progress">
+      		<div class="indeterminate"></div>
+  			</div>
+			<p class=min style="margin-top:20px;font-size:27px;color:#006064;font-weight:700"><i class="material-icons">info</i>{$_set2[info]}</p>
+
 			</DIV>
 EOM;
 	}
@@ -769,7 +791,7 @@ EOM;
 				$def2_b="img/1.png";				
 			}
 			$room[$value[room]]=<<<EOM
-			<div class="f1 row animated _fadeIn flipInX _hoge" style="margin:10px 0px;background:{$def2_c} url({$def2_b}) no-repeat right top">
+			<div class="f2 row animated _fadeIn flipInX" style="margin:10px 0px;background:{$def2_c} url({$def2_b}) no-repeat right top">
 			    <div class="col s12">
 			    <h3>{$value[room]} <span class="min TEN">残り {$_value[capa]} {$def}</span></h3>
 			    {$person_s}
@@ -786,6 +808,7 @@ EOM;
 	public function html_c2(){//設定画面
 
 		global $_set;
+		global $_set2;
 
 		for($i = 0; $i < 9; $i++){
 			$i2=$i+1;
@@ -836,9 +859,22 @@ EOM;
 			
 			{$input_s}
 			
-			<button style="margin-left:-20px;margin-right:20px;" class="btn waves-effect waves-light btn-large pulse" type="submit" name="action" value=1>送信<i class="material-icons right">send</i></button>
+			<button style="margin-left:-20px;" class="btn waves-effect waves-light btn-large pulse" type="submit" name="action" value=1>確定<i class="material-icons right">send</i></button>
+			<a href="javascript:history.back();"><button style="margin-right:10px;" class="btn waves-effect waves-light btn-large blue-grey darken-2" type="button" name="" value=>戻る<!--<i class="material-icons right">send</i>--></button></a>
 			<button class="btn waves-effect waves-light btn-large pink darken-3" type="submit" name="action" value=2>リセット<i class="material-icons right">send</i></button>
+			<p style='color:pink'>リセット押すと、データが初期化されます</p>
 			</div>
+
+			<div class="row">
+			    <form class="col s12">
+			      <div class="row">
+			        <div class="input-field col s12">
+			          <textarea name=info id="textarea1" class="materialize-textarea">{$_set2[info]}</textarea>
+			          <label for="textarea1">お知らせ</label>
+			        </div>
+			      </div>
+			    </form>
+			 </div>
 
 			<p style='height:30px;'></p>
 			</form>
@@ -861,7 +897,7 @@ EOM;
 		            <p><i class="0large medium material-icons" style='float:left'>blur_linear</i>
 		            <span class='min' style='font-size:19px;font-weight:_bold'>部屋定員管理くん</span>
 		            <br><span class='min' style='font-size:19px;font-weight:_bold'>練習会オペ用</span>
-		            <br/><a style="color:white;" href=https://github.com/lavierx/krepo-2>https://github.com/lavierx/krepo-2</a>
+		            <br/><a style="color:white;" href=https://github.com/lavierx/room>https://github.com/lavierx/room</a>
 		            </p>
 		            <br clear=all>     
 		            <p class="grey-text text-lighten-4 addr">　<i class="material-icons">build</i><a style='color:white;font-size:19px;' href={$url}?set=1 _data-lity>部屋設定</a></p>
