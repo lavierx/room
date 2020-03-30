@@ -692,7 +692,7 @@ EOM;
 		foreach ($_set as $key => $value) {
 			if($value[room]==""){continue;}
 			$btn.=<<<EOM
-			<button class="btn waves-effect waves-light btn-large {$pulse}" type="submit" name="entry" value="{$value[room]}" style='margin:6px;'>{$value[room]}<i class="material-icons right">send</i></button>
+			<button class="btn waves-effect waves-light btn-large {$pulse}" type="submit" name="entry" value="{$value[room]}" style='margin:6px;'>入室{$value[room]}<i class="material-icons right">send</i></button>
 EOM;
 		}
 
@@ -742,7 +742,7 @@ EOM;
 			foreach ($_entry[$value[room]] as $key2 => $value2) {
 				list($name,$photo,$time)=explode("\t",$value2);
 				//$time_df=time()-$time;
-				$time_df=date("h:i",$time);
+				$time_df=date("H:i",$time);
 				$person_s.="<img onclick=\"M.toast({html: '{$name} {$time_df}'})\" class='ph1 faa-tada animated _tooltipped' src='{$photo}' title='{$name}' data-position='bottom' data-tooltip='{$name}'>";
 				$cnt++;
 			}
@@ -754,17 +754,22 @@ EOM;
 			//$def2=0.1;
 			if($def2>1){
 				$def2_c="#d81b60";
+				$def2_b="";				
 			}elseif($def2>=0.8){
 				$def2_c="#f50057";
+				$def2_b="";
 			}elseif($def2>=0.5){
-				$def2_c="#827717";
+				$def2_c="#e65100";
+				$def2_b="";
 			}elseif($def2>0){
 				$def2_c="#00acc1";
+				$def2_b="img/1.png";
 			}else{
 				$def2_c="#fff";
+				$def2_b="img/1.png";				
 			}
 			$room[$value[room]]=<<<EOM
-			<div class="f1 row animated _fadeIn flipInX _hoge" style="margin:10px 0px;background:{$def2_c}">
+			<div class="f1 row animated _fadeIn flipInX _hoge" style="margin:10px 0px;background:{$def2_c} url({$def2_b}) no-repeat right top">
 			    <div class="col s12">
 			    <h3>{$value[room]} <span class="min TEN">残り {$_value[capa]} {$def}</span></h3>
 			    {$person_s}
@@ -831,7 +836,7 @@ EOM;
 			
 			{$input_s}
 			
-			<button class="btn waves-effect waves-light btn-large" type="submit" name="action" value=1>送信<i class="material-icons right">send</i></button>
+			<button style="margin-left:-20px;margin-right:20px;" class="btn waves-effect waves-light btn-large pulse" type="submit" name="action" value=1>送信<i class="material-icons right">send</i></button>
 			<button class="btn waves-effect waves-light btn-large pink darken-3" type="submit" name="action" value=2>リセット<i class="material-icons right">send</i></button>
 			</div>
 
@@ -856,7 +861,7 @@ EOM;
 		            <p><i class="0large medium material-icons" style='float:left'>blur_linear</i>
 		            <span class='min' style='font-size:19px;font-weight:_bold'>部屋定員管理くん</span>
 		            <br><span class='min' style='font-size:19px;font-weight:_bold'>練習会オペ用</span>
-		            <br/><a style="color:white;" href=https://github.com/lavierx/room>https://github.com/lavierx/room</a>
+		            <br/><a style="color:white;" href=https://github.com/lavierx/krepo-2>https://github.com/lavierx/krepo-2</a>
 		            </p>
 		            <br clear=all>     
 		            <p class="grey-text text-lighten-4 addr">　<i class="material-icons">build</i><a style='color:white;font-size:19px;' href={$url}?set=1 _data-lity>部屋設定</a></p>
