@@ -638,8 +638,8 @@ class showHtml{
 		    border-radius: 30px;
 	    	box-shadow: 0 10px 20px -10px #777777;
 	    	margin:3px;
-	    	width:40px;
-	    	height:40px;
+	    	width:30px;
+	    	height:30px;
 		}
 		</style>	
 		</head>
@@ -708,7 +708,7 @@ EOM;
 		foreach ($_set as $key => $value) {
 			if($value[room]==""){continue;}
 			$btn.=<<<EOM
-			<button class="btn waves-effect waves-light btn-large {$pulse}" type="submit" name="entry" value="{$value[room]}" style='margin:6px;'>入室{$value[room]}<i class="material-icons right">send</i></button>
+			<button onClick="sound()" class="btn waves-effect waves-light btn-large {$pulse}" type="submit" name="entry" value="{$value[room]}" style='margin:6px;'>入室{$value[room]}<i class="material-icons right">send</i></button>
 EOM;
 		}
 
@@ -719,7 +719,7 @@ EOM;
 		<BODY><DIV class="container animated fadeIn">
 
 			<nav class="cyan darken-2">
-			<p style="font-weight:700;_text-shadow: #fff 0px 1px 2px, #000 0px -1px 1px;"><a class=min href={$url}>部屋定員管理くん <span class=TEN>{$NT2}</span></a></p>
+			<p style="font-weight:700;_text-shadow: #fff 0px 1px 2px, #000 0px -1px 1px;"><a class=min href={$url}>部屋定員管理くん <span class=TEN>{$_NT2}</span></a></p>
 			</nav>
 
 			<DIV id=contents>
@@ -727,6 +727,18 @@ EOM;
 			{$name}
 
 			<form action="{$url}" method="post" enctype="multipart/form-data" class=hoge>
+
+
+			<!-- 音声ファイルの読み込み 9〜10行目にURLを指定 -->
+			<audio id="sound-file" preload="auto">
+				<source src="1.mp3" type="audio/mp3">
+				<!--<source src="1.wav" type="audio/wav">-->
+			</audio>
+			<script>
+			function sound(){
+			// [ID:sound-file]の音声ファイルを再生[play()]する
+			document.getElementById( 'sound-file' ).play() ;			}
+			</script>
 
 		    <div class="row">
 			    <div class="col s12 l12">
@@ -738,8 +750,8 @@ EOM;
 
 			</form>
 
-			<div class="progress">
-      		<div class="indeterminate"></div>
+			<div class="progress" style='margin-top:40px;'>
+      			<div class="indeterminate"></div>
   			</div>
 			<p class=min style="margin-top:20px;font-size:27px;color:#006064;font-weight:700"><i class="material-icons">info</i>{$_set2[info]}</p>
 
@@ -847,6 +859,9 @@ EOM;
 		    vertical-align: top;
 		    padding-top:10px;
 		    padding-top:0px;
+		}
+		.btn{
+			margin:5px;
 		} 
 		</style>
 		<BODY><DIV class="container">
