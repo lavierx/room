@@ -728,8 +728,7 @@ EOM;
 
 			<form action="{$url}" method="post" enctype="multipart/form-data" class=hoge>
 
-
-			<!-- 音声ファイルの読み込み 9〜10行目にURLを指定 -->
+			<!-- 音声ファイルの読み込み -->
 			<audio id="sound-file" preload="auto">
 				<source src="1.mp3" type="audio/mp3">
 				<!--<source src="1.wav" type="audio/wav">-->
