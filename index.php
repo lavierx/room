@@ -3,10 +3,11 @@
 include("pre.php");
 include("define.php");//サーバ定義
 //配列をファイルから読み込み
-$_set = unserialize(file_get_contents("_set.dat"));//設定データ
-$_set2 = unserialize(file_get_contents("_set2.dat"));//設定データ
+$_set = unserialize(file_get_contents("_set{$_GET[k]}.dat"));//設定データ
+$_setB = unserialize(file_get_contents("_setB{$_GET[k]}.dat"));//設定データ
+$ph1_size=$_setB[icon_s];//顔写真アイコンサイズ 30px;
 //配列をファイルから読み込み
-$_entry = unserialize(file_get_contents("_entry.dat"));//入室データ
+$_entry = unserialize(file_get_contents("_entry{$_GET[k]}.dat"));//入室データ
 //print_r($_entry);
 
 $NT=date("Y-m-d");
@@ -23,6 +24,7 @@ if (isset($_COOKIE["mid"])){
 	$html=new showHtml();
 	$person=$html->showPh($mid);
 	//print_r($person);
+	$logout = "login.php?url=".urlencode($url)."&logout=1";
 }else{
 	$mid="0";
 }	
@@ -36,8 +38,6 @@ $logout = "login.php?url=".urlencode($url)."&logout=1";
 if (isset($_COOKIE["user"])){
 	$user = urldecode($_COOKIE["user"]);
 }else{
-	//header( "Location: ./login.php?url={$_SERVER['PHP_SELF']}?logout=1" );
-	//header( "Location: ../login.php?url=tmp001/check001?logout=1" );
 	echo "<script>location.href = '{$logout}';</script>";	
 	exit;
 }	
@@ -58,32 +58,39 @@ endif;
 //============================================//
 if($_POST[action]<>""):
 	//echo $_POST[action];exit;
+	//echo $_GET[k];exit;	
 
   	//配列をファイルから読み込み
-  	$_set = unserialize(file_get_contents("_set.dat"));
+  	$_set = unserialize(file_get_contents("_set{$_GET[k]}.dat"));
+  	$_setB = unserialize(file_get_contents("_setB{$_GET[k]}.dat"));
+  	//print_r($_set);exit;
 
 	//print_r($_POST[room]);
 	foreach ($_POST[room] as $key => $value) {
 		$_set[$key][room]=$_POST[room][$key];
 		$_set[$key][capa]=$_POST[capa][$key];
 	}
-	$_set2[info]=$_POST[info];
+	$_setB[info]=$_POST[info];
+	$_setB[icon_s]=$_POST[icon_s];
+	$_setB[mochi]=$_POST[mochi];
 	//print_r($_set);
 
 	if($_POST[action]=="1"):
 	  	//配列の中身をファイルに保存
-	  	file_put_contents("_set.dat", serialize($_set));
-	  	file_put_contents("_set2.dat", serialize($_set2));
+	  	file_put_contents("_set{$_GET[k]}.dat", serialize($_set));
+	  	file_put_contents("_setB{$_GET[k]}.dat", serialize($_setB));
+
 	elseif($_POST[action]=="2")://リセット
 		$_set="";//初期化
-	  	file_put_contents("_set.dat", serialize($_set));
-		$_set2="";//初期化
-	  	file_put_contents("_set2.dat", serialize($_set2));
+	  	file_put_contents("_set{$_GET[k]}.dat", serialize($_set));
+		$_setB="";//初期化
+	  	file_put_contents("_setB{$_GET[k]}.dat", serialize($_setB));
 		$_entry="";//初期化
-	  	file_put_contents("_entry.dat", serialize($_entry));
+	  	file_put_contents("_entry{$_GET[k]}.dat", serialize($_entry));
   	endif;
 
-  	echo "<script>location.href = 'index';</script>"; 
+	$url=str_replace("&set=1", "", $url);
+  	echo "<script>location.href = '{$url}';</script>";
 
 endif;
 
@@ -122,7 +129,7 @@ if($_POST[entry]<>""):
 	//echo $_POST[action];exit;
 
   	//配列をファイルから読み込み
-  	$_entry = unserialize(file_get_contents("_entry.dat"));
+  	$_entry = unserialize(file_get_contents("_entry{$_GET[k]}.dat"));
 
 	if($mid==0){
 		$mid=urlencode($user);
@@ -144,7 +151,7 @@ if($_POST[entry]<>""):
   	$_entry[$_POST[entry]][$mid]="{$person[0]}\t{$person[1]}\t{$TM}";
 
   	//配列の中身をファイルに保存
-  	file_put_contents("_entry.dat", serialize($_entry));		
+  	file_put_contents("_entry{$_GET[k]}.dat", serialize($_entry));		
 endif;
 
 //============================================//
@@ -160,12 +167,20 @@ if($_GET[set]==1):
 endif;
 
 //------------部屋画面-----------------//
-if($_GET[set]<>1):
+if($_GET[set]==''):
 	$html=new showHtml();
 	$html->html_h();
 	$html->html_c($mid);
 	//$html->html_r();
 	$html->html_f();
+endif;
+
+//------------タイマー画面-----------------//
+if($_GET[set]==2):
+	$timer=new timer();
+	//$timer->html_h();
+	$timer->html_timer();
+	//$html->html_r();
 endif;
 
 //============================================//
@@ -243,6 +258,8 @@ class showHtml{
 
 	public function html_h(){
 
+		global $ph1_size;
+
 		echo $html_h=<<<EOM
 		<html>
 		<head>
@@ -261,6 +278,8 @@ class showHtml{
 		<script type="text/javascript" src="/etc/lib/ten.js"></script>
 		<!--animate.css-->
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+		<!--iframe高さ調整
+		<script src="//vps.pia-no.com/js/jquery-iframe-auto-height-master/dist/iautoh_all.js"></script>	-->		
 
 		<!--materializecss-->
 		<script>
@@ -276,8 +295,8 @@ class showHtml{
 			//$('input#input_text, textarea#textarea2').characterCounter();
 		  M.AutoInit();//すべてのイニシャライズをまとめて行う!
 		    //デートピッカー
-		  //$('.datepicker').datepicker();
-		  $('.datepicker').datepicker({
+		  //$('{$_GET[k]}.datepicker'){$_GET[k]}.datepicker();
+		  $('{$_GET[k]}.datepicker'){$_GET[k]}.datepicker({
 		    i18n:{
 		        months:["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
 		        monthsShort: ["1/", "2/", "3/", "4/", "5/", "6/", "7/", "8/", "9/", "10/", "11/", "12/"],
@@ -293,6 +312,8 @@ class showHtml{
 
 		  //ツールチップ
     	　//$('.tooltipped').tooltip();
+
+    	  //$('.pushpin').pushpin();
 
 		  //オートコンプリート
 		  $('input.autocomplete').autocomplete({
@@ -336,36 +357,8 @@ class showHtml{
 		</script>
 
 		<!--POPUP-->
-		<link rel="stylesheet" type="text/css" href="/lib/js/fb//jquery.fancybox-1.3.4.css" media="screen" />
-		<!--<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js?ver=1.6.3"></script>-->
-		<script type="text/javascript" src="/lib/js/fb//jquery.gptop-1.0.js?ver=3.3"></script>
-		<script type="text/javascript" src="/lib/js/fb//jquery.fancybox-1.3.4.pack.js?ver=3.3"></script>
-
-		<script type="text/javascript">
-			jQuery(function($) {
-			$('#goto_top').gpTop();
-			$('.iframe').fancybox({
-			maxWidth	: 800,
-			maxHeight	: 600,
-			fitToView	: false,
-			width		: '90%',
-			height		: '90%',
-			autoSize	: false,
-			closeClick	: false,
-			openEffect	: 'none',
-			closeEffect	: 'none'
-			});
-			$('.over').fancybox({
-			'titlePosition'  : 'over'
-			});
-			$('a[rel*=lightbox]').fancybox(); 
-			});
-		</script>
-		<!--POPUP-->
-
-		<!--POPUP-->
 		<!--<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js'></script>-->
-		<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/lity/1.6.6/lity.css' />  
+		<!--<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/lity/1.6.6/lity.css' />  
 		<script src='https://cdnjs.cloudflare.com/ajax/libs/lity/1.6.6/lity.js'></script>
 		<style>
 		.lity-iframe .lity-container {
@@ -411,6 +404,7 @@ class showHtml{
 		    padding-top:0px;
 		} 
 		</style>
+		-->
 
 		<!--サプミットボタン・エンター無効化-->
 		<script>
@@ -484,52 +478,6 @@ class showHtml{
 		    box-shadow:2px 2px 4px rgba(143,183,222,0.6),-2px -2px 4px rgba(143,183,222,0.6),inset 0 1px 2px rgba(0,0,0,0.2);
 		}
 			
-		#a2{
-			text-align:center;	
-			text-decoration:none;	
-			padding:2px 5px;
-			border:1px solid white;
-			background-color:green;
-			color:white;
-			filter:alpha(opacity=50);
-			-moz-opacity: 0.5;
-			opacity: 0.5;
-			white-space: nowrap;  
-			width:190px;
-			_padding:30px;
-			font-size:13px;
-		}	
-		#a3{
-			font-size:13px;
-			text-align:center;	
-			text-decoration:none;	
-			padding:2px 5px;
-			border:1px solid white;
-			background-color:red;
-			color:white;
-			filter:alpha(opacity=50);
-			-moz-opacity: 0.5;
-			opacity: 0.5;
-			white-space: nowrap;  
-			width:190px;
-			_padding:30px;
-		}
-				
-		#a3b{
-			font-size:13px;
-			text-align:center;	
-			text-decoration:none;	
-			padding:2px 5px;
-			border:1px solid white;
-			background-color:red;
-			color:aqua;
-			filter:alpha(opacity=50);
-			-moz-opacity: 0.5;
-			opacity: 0.5;
-			white-space: nowrap;  
-			width:190px;
-			_padding:30px;
-		}
 		#contents{
 			background:#b0c4de;
 			margin:0px !important;
@@ -611,6 +559,7 @@ class showHtml{
 		}
 		.f1 {
 		    background: rgba(255,255,255, 0.1);
+		    _background:#37474f;
 		    padding: 20px;
 		    margin: -30px -7px -15px -7px;
 		    color: silver !important;
@@ -619,6 +568,7 @@ class showHtml{
 		}
 		.f2 {
 		    background: rgba(255,255,255, 0.1);
+		    background:#37474f;		    
 		    padding: 20px;
 		    margin: -30px -7px -15px -7px;
 		    color: rgba(255,255,255,.7) !important;
@@ -638,8 +588,23 @@ class showHtml{
 		    border-radius: 30px;
 	    	box-shadow: 0 10px 20px -10px #777777;
 	    	margin:3px;
-	    	width:30px;
-	    	height:30px;
+	    	width:{$ph1_size}px;
+	    	height:{$ph1_size}px;
+		}
+		.btn-large {
+		    height: 54px;
+		    line-height: 54px;
+		    font-size: 22px;
+		    padding: 0 28px;
+		}
+		.ic{$_GET[k]}{
+			color:#f50057;
+		}
+		.time{
+			color:aqua;
+			font-size:19px;
+			padding:0 10px;
+			font-style:italic;
 		}
 		</style>	
 		</head>
@@ -651,9 +616,10 @@ EOM;
 	public function html_c($mid){//メイン画面
 
 		global $_set;
-		global $_set2;
+		global $_setB;
 		global $user;
 		global $NT2;
+		global $url;		
 
 		$html=new showHtml();//mimiIDあり!
 		$person=$html->showPh($mid);
@@ -685,19 +651,24 @@ EOM;
 
 		  	</form>
 EOM;
-		else:
+		else://mimiIDあり
 		
 		$name=<<<EOM
 			<form action="{$url}" method="post" enctype="multipart/form-data" class="animated fadeIn _rollIn">
 
 			<div class="f1 row" style="margin:0px 0px;padding:10px;">
-		    <div class="col s12">
-		      <div class="row" style="margin:0px 0px;">
-		        <div class="input-field col s12">
-		        	<img src="{$person[1]}" style='width:56px;padding-right:10px;'><span class=_TEN style='font-size:27px;'>{$person[0]} {$mid}</span>
-		        </div>
-		      </div>
-		    </div>
+			    <div class="col s12">
+			      <div class="row" style="margin:0px 0px;">
+			        <div class="input-field col s12">
+			        	<img src="{$person[1]}" style='width:56px;padding-right:10px;'><span class=_TEN style='font-size:27px;'>{$person[0]} {$mid}</span>
+			        </div>
+			      </div>
+			    </div>
+			    <div class="col s12">
+					<div style="vertical-align:text-bottom">
+						<iframe style="width:100%;height:75px" align="top" src="{$url}?&set=2" frameborder="0" scrolling="no"></iframe>
+					</div>
+				</div>
 		  	</div>
 
 		  	</form>
@@ -708,18 +679,26 @@ EOM;
 		foreach ($_set as $key => $value) {
 			if($value[room]==""){continue;}
 			$btn.=<<<EOM
-			<button onClick="sound()" class="btn waves-effect waves-light btn-large {$pulse}" type="submit" name="entry" value="{$value[room]}" style='margin:6px;'>入室{$value[room]}<i class="material-icons right">send</i></button>
+			<button onClick="sound()" class="btn waves-effect waves-light btn-large {$pulse}" type="submit" name="entry" value="{$value[room]}" style='margin:6px;'>{$value[room]}<i class="material-icons right">send</i></button>
 EOM;
 		}
 
 		$html_r=$html->html_r();
 		
 		//メイン画面
+		$url2=str_replace(".php", "", $_SERVER["SCRIPT_NAME"]);
 		echo $html_c=<<<EOM
 		<BODY><DIV class="container animated fadeIn">
 
 			<nav class="cyan darken-2">
-			<p style="font-weight:700;_text-shadow: #fff 0px 1px 2px, #000 0px -1px 1px;"><a class=min href={$url}>部屋定員管理くん <span class=TEN>{$_NT2}</span></a></p>
+			<p style="font-weight:700;_text-shadow: #fff 0px 1px 2px, #000 0px -1px 1px;">
+				<a style='display: inline-block;font-size:22px;' class=min href={$url}>部屋定員管理くん</a>
+				<a style='display: inline-block' href={$url2}?k=1><i class="material-icons ic1">filter_1</i></a>
+				<a style='display: inline-block' href={$url2}?k=2><i class="material-icons ic2">filter_2</i></a>
+				<a style='display: inline-block' href={$url2}?k=3><i class="material-icons ic3">filter_3</i></a>
+				<a style='display: inline-block' href={$url2}?k=4><i class="material-icons ic4">filter_4</i></a>
+				<a style='display: inline-block' href={$url2}?k=5><i class="material-icons ic5">filter_5</i></a>
+			</p>
 			</nav>
 
 			<DIV id=contents>
@@ -728,7 +707,8 @@ EOM;
 
 			<form action="{$url}" method="post" enctype="multipart/form-data" class=hoge>
 
-			<!-- 音声ファイルの読み込み -->
+
+			<!-- 音声ファイルの読み込み 9〜10行目にURLを指定 -->
 			<audio id="sound-file" preload="auto">
 				<source src="1.mp3" type="audio/mp3">
 				<!--<source src="1.wav" type="audio/wav">-->
@@ -752,7 +732,7 @@ EOM;
 			<div class="progress" style='margin-top:40px;'>
       			<div class="indeterminate"></div>
   			</div>
-			<p class=min style="margin-top:20px;font-size:27px;color:#006064;font-weight:700"><i class="material-icons">info</i>{$_set2[info]}</p>
+			<p class='min _pushpin' style="margin-top:20px;font-size:27px;color:#006064;font-weight:700"><i class="material-icons">info</i>{$_setB[info]}</p>
 
 			</DIV>
 EOM;
@@ -760,13 +740,21 @@ EOM;
 
 	//-----------部屋状況画面-------------------------//
 
+
 	public function html_r(){//部屋状況画面
 
 		global $_set;
 		//print_r($_set);
 		global $_entry;
-		//print_r($_entry);		
+		//print_r($_entry);
 
+		//-----各自の演奏時間データ------//
+		$timer=new timer();
+		//$timer->html_h();
+		$timer_all=$timer->html_timer_all("");// 1: 秒単位　それ以外:分単位
+		//print_r($timer_all);//各自の演奏時間データ
+		//echo $timer_all[1];
+		
 		foreach ($_set as $key => $value) {
 			$person_s="";//初期化
 			$cnt="";//初期化
@@ -775,8 +763,28 @@ EOM;
 			foreach ($_entry[$value[room]] as $key2 => $value2) {
 				list($name,$photo,$time)=explode("\t",$value2);
 				//$time_df=time()-$time;
+
+				//偏差値
+				$sd=$timer->getSd($timer_all,$timer_all[$key2]);
+				if($sd>65){
+					$faa="faa-burst";
+				}elseif($sd>=60){
+					$faa="faa-flash";
+				}elseif($sd>=50){
+					$faa="faa-tada";
+				}elseif($sd<50){
+					$faa="faa-pulse";
+				}
+
 				$time_df=date("H:i",$time);
-				$person_s.="<img onclick=\"M.toast({html: '{$name} {$time_df}'})\" class='ph1 faa-tada animated _tooltipped' src='{$photo}' title='{$name}' data-position='bottom' data-tooltip='{$name}'>";
+				$person_s.="<img onclick=\"M.toast({html: '{$name} <span class=\'time min _TEN\'>{$timer_all[$key2]}</span> {$time_df}'})\" class='ph1 {$faa} animated _tooltipped _fadeIn _flipInX' src='{$photo}' title='{$name}' data-position='bottom' data-tooltip='{$name}'>";
+				//$person_s.="<img onclick=\"M.toast({html: '{$name} {$time_df}'})\" class='ph1 faa-burst animated _tooltipped _fadeIn _flipInX' src='{$photo}' title='{$name}' data-position='bottom' data-tooltip='{$name}'>";
+				//$person_s.="<img onclick=\"M.toast({html: '{$name} {$time_df}'})\" class='ph1 faa-flash animated _tooltipped _fadeIn _flipInX' src='{$photo}' title='{$name}' data-position='bottom' data-tooltip='{$name}'>";
+				//$person_s.="<img onclick=\"M.toast({html: '{$name} {$time_df}'})\" class='ph1 faa-tada animated _tooltipped _fadeIn _flipInX' src='{$photo}' title='{$name}' data-position='bottom' data-tooltip='{$name}'>";
+				/*$person_s.="<img onclick=\"M.toast({html: '{$name} {$time_df}'})\" class='ph1 faa-tada animated _tooltipped _fadeIn _flipInX' src='{$photo}' title='{$name}' data-position='bottom' data-tooltip='{$name}'>";
+				$person_s.="<img onclick=\"M.toast({html: '{$name} {$time_df}'})\" class='ph1 faa-tada animated _tooltipped _fadeIn _flipInX' src='{$photo}' title='{$name}' data-position='bottom' data-tooltip='{$name}'>";
+				$person_s.="<img onclick=\"M.toast({html: '{$name} {$time_df}'})\" class='ph1 faa-tada animated _tooltipped _fadeIn _flipInX' src='{$photo}' title='{$name}' data-position='bottom' data-tooltip='{$name}'>";
+				$person_s.="<img onclick=\"M.toast({html: '{$name} {$time_df}'})\" class='ph1 faa-tada animated _tooltipped _fadeIn _flipInX' src='{$photo}' title='{$name}' data-position='bottom' data-tooltip='{$name}'>";*/
 				$cnt++;
 			}
 			//print_r($person_s);
@@ -798,7 +806,7 @@ EOM;
 				$def2_c="#00acc1";
 				$def2_b="img/1.png";
 			}else{
-				$def2_c="#fff";
+				$def2_c="#eceff1";
 				$def2_b="img/1.png";				
 			}
 			$room[$value[room]]=<<<EOM
@@ -819,7 +827,8 @@ EOM;
 	public function html_c2(){//設定画面
 
 		global $_set;
-		global $_set2;
+		global $_setB;
+		global $url;
 
 		for($i = 0; $i < 9; $i++){
 			$i2=$i+1;
@@ -842,9 +851,16 @@ EOM;
 		<style>
 		body{
 			background: none rgba(0,0,0,1);
+		    background:#37474f;			
+			background: linear-gradient(-45deg, rgba(108, 179, 255, .1), rgba(255, 255,255, .1)) fixed,
+		  	url(img/lbg2.jpg);  		 
+		 	background-size: cover;
+			background-repeat: no-repeat;
+			background-attachment: fixed;
 		}
 		#contents{
-			background: none rgba(0,0,0,1);
+			background: none rgba(0,0,0,.3);
+		    _background:#37474f;			
 		}
 		input {
 		    color: darkkhaki;
@@ -867,31 +883,41 @@ EOM;
 
 			<DIV id=contents>
 
-			<form action="{$url}" method="post" enctype="multipart/form-data" class="animated fadeIn">
+				<form action="{$url}" method="post" enctype="multipart/form-data" class="animated fadeIn">
 
-			<div style="margin:50px 0px;text-align:center">
-			
-			{$input_s}
-			
-			<button style="margin-left:-20px;" class="btn waves-effect waves-light btn-large pulse" type="submit" name="action" value=1>確定<i class="material-icons right">send</i></button>
-			<a href="javascript:history.back();"><button style="margin-right:10px;" class="btn waves-effect waves-light btn-large blue-grey darken-2" type="button" name="" value=>戻る<!--<i class="material-icons right">send</i>--></button></a>
-			<button class="btn waves-effect waves-light btn-large pink darken-3" type="submit" name="action" value=2>リセット<i class="material-icons right">send</i></button>
-			<p style='color:pink'>リセット押すと、データが初期化されます</p>
-			</div>
+					<div style="margin:50px 0px;text-align:center">
+				
+						{$input_s}
 
-			<div class="row">
-			    <form class="col s12">
-			      <div class="row">
-			        <div class="input-field col s12">
-			          <textarea name=info id="textarea1" class="materialize-textarea">{$_set2[info]}</textarea>
-			          <label for="textarea1">お知らせ</label>
-			        </div>
-			      </div>
-			    </form>
-			 </div>
+				        <div class="input-field col s12">
+				          <textarea name=info id="textarea1" class="materialize-textarea">{$_setB[info]}</textarea>
+				          <label for="textarea1">お知らせ</label>
+				        </div>
+						
+						<button style="margin-left:-20px;" class="btn waves-effect waves-light btn-large pulse" type="submit" name="action" value=1>確定<i class="material-icons right">send</i></button>
+						<a href="javascript:history.back();"><button style="margin-right:10px;" class="btn waves-effect waves-light btn-large blue-grey darken-2" type="button" name="" value=>戻る<!--<i class="material-icons right">send</i>--></button></a>
+						<button class="btn waves-effect waves-light btn-large pink darken-3" type="submit" name="action" value=2>リセット<i class="material-icons right">send</i></button>
+						<p style='color:pink'>リセット押すと、データが初期化されます</p>
+					</div>
 
-			<p style='height:30px;'></p>
-			</form>
+					<div class="row">
+				    	<div class="col s1">
+	      					<i class="material-icons">account_circle</i>
+	      				</div>
+				    	<div class="col s8">
+				    		<p class="range-field">
+	      					<input type="range" name="icon_s" min="30" max="100" value="{$_setB[icon_s]}" />
+	      					</p>
+	      				</div>
+				    	<div class="col s3">	      				
+	 	     				<input type="text" name="mochi" value="{$_setB[mochi]}" placeholder="持ち時間(分)" style="padding-left:5px"/>
+	      				</div>
+	      			</div>	
+
+				</form>
+
+				<p style='height:30px;'></p>
+
 			</DIV>
 
 		</DIV></BODY>
@@ -903,6 +929,12 @@ EOM;
 
 	public function html_f(){
 		global $HP_DOMAIN;
+		global $url;
+		global $logout;
+
+		if($_GET[k]==""){
+			$url="{$url}?";	
+		}
 		echo $html_f=<<<EOM
 		    <footer class="page-footer">
 		      <div class="container2" style='width:97%'>
@@ -914,12 +946,15 @@ EOM;
 		            <br/><a style="color:white;" href=https://github.com/lavierx/room>https://github.com/lavierx/room</a>
 		            </p>
 		            <br clear=all>     
-		            <p class="grey-text text-lighten-4 addr">　<i class="material-icons">build</i><a style='color:white;font-size:19px;' href={$url}?set=1 _data-lity>部屋設定</a></p>
+		            <p class="grey-text text-lighten-4 addr">　<i class="material-icons">build</i><a style='color:white;font-size:19px;' href={$url}&set=1 _data-lity>部屋設定</a></p>
 		          </div>
 		          <div class="col l4 offset-l2 s12">
 		            <p class="white-text"><i class="fas fa-info fa-fw"></i>お問い合わせ</p>
 		            <ul>
 		              <li><a class="grey-text text-lighten-3" href="mailto:info@{$HP_DOMAIN}"><i class="fa fa-envelope"></i> info@{$HP_DOMAIN}</a></li>
+		              <li><a class="grey-text text-lighten-3" href="index">DEMO</a></li>
+		              <li><a class="grey-text text-lighten-3" href="{$logout}">LOGOUT</a></li>
+		              		              
 		            </ul>
 		          </div>
 		        </div>
@@ -943,4 +978,314 @@ EOM;
 	}
 
 }
+
+//============================================//
+//---------------タイマー-------------------------//
+//============================================//
+
+if($_POST[ip_id]=="start")://開始
+
+	//file_put_contents("debug.txt", $_POST[ip_id]);exit;
+
+	// データベースに接続
+	$dsn = "sqlite:time.sqlite";
+	$conn = new PDO($dsn);
+	 
+	// テーブルの作成
+	//$sql = "CREATE TABLE IF NOT EXISTS t1(id INTEGER PRIMARY KEY,mid,ymd,ts,te,tt)";
+	//$stmt = $conn->prepare($sql);
+	//$stmt->execute();
+	 
+	// データの追加
+	$ymd=date("Ymd");
+	$ts=time();
+	//$xx=round($tt/60,1)."分演奏しました!";
+	//echo "<script>alert('{$xx}');</script>";
+	$sql = "INSERT INTO t1(mid,ymd,ts,te,tt) VALUES('{$mid}','{$ymd}','{$ts}','{$te}','{$tt}')";
+	//file_put_contents("debug.txt", $sql);exit;
+	$stmt = $conn->prepare($sql);
+	$stmt->execute();
+
+endif;
+
+if($_POST[ip_id]=="stop")://停止
+
+	// データベースに接続
+	$dsn = "sqlite:time.sqlite";
+	$conn = new PDO($dsn);
+	$sql="
+	SELECT *
+	FROM t1
+	WHERE mid = '{$mid}'
+	ORDER BY id DESC 
+	LIMIT 1
+	;";
+	$stmt = $conn->prepare($sql);
+	$stmt->execute();
+	while ($row = $stmt->fetch()) {
+		$id=$row[0];
+		$ts=$row[3];		
+	}
+
+	//終了時間の書き込み
+	$te=time();
+	$tt=$te-$ts;
+
+	$sql="
+	UPDATE t1 SET
+	te = '{$te}',
+	tt = '{$tt}'
+	WHERE id = '{$id}'
+	;";
+	$stmt = $conn->prepare($sql);
+	$stmt->execute();
+	
+endif;
+
+//継承クラス
+class timer extends showHtml{
+
+	//偏差値計算
+	public function getSd($input,$value){
+		//$input = array( 88, 32, 48, 95, 67, 45, 90 );
+		//$value = 80;			 
+		$sumsq = 0;
+		$n = count($input);
+		$m = array_sum($input) / $n;    // 平均			 
+		foreach($input as $a){
+		    $sumsq += pow(abs($a - $m), 2);
+		}
+		$v   = ($n >= 2) ? $sumsq / ($n - 1) : 0;    // 不偏分散
+		$vp  = ($n > 0) ? $sumsq / $n : 0;           // 標本分散
+		$sd  = sqrt($v);                            // 標本標準偏差
+		$sdp = sqrt($vp);                           // 母標準偏差
+		return $score = ($value - $m) / $sdp * 10 + 50;    // 偏差値
+	}
+
+	//グループ集計
+	public function html_timer_all($sec){
+
+	  	global $url;
+	  	global $mid;
+
+		$Ymd=date("Ymd");
+
+		// データベースに接続
+		$dsn = "sqlite:time.sqlite";
+		$conn = new PDO($dsn);
+		$sql = "SELECT mid,SUM(tt)
+		FROM t1
+		WHERE ymd ='{$Ymd}'
+		GROUP BY mid
+		ORDER BY SUM(tt) DESC	
+		";
+
+		$stmt = $conn->prepare($sql);
+		$stmt->execute();
+		while ($row = $stmt->fetch()) {
+			if($sec=="1"){
+				$time_all[$row[0]]=round($row[1]/1,1);
+			}else{	
+				$time_all[$row[0]]=round($row[1]/60,1);
+			}
+		}
+		return $time_all; 
+	 }//end:function
+
+	 //タイマー記録
+	 public function html_timer(){
+
+	  	global $url;
+	  	global $mid;
+	  	global $_setB;
+	  	global $FILE_DOMAIN2;
+
+	  	//print_r($_setB);
+
+		$Ymd=date("Ymd");
+
+		// データベースに接続
+		$dsn = "sqlite:time.sqlite";
+		$conn = new PDO($dsn);
+		/*$sql = "SELECT mid,SUM(tt)
+		FROM t1
+		WHERE ymd =".$XXXX."
+		GROUP BY mid
+		ORDER BY SUM(tt) DESC	
+		";*/
+
+		$sql="
+		SELECT SUM(tt)
+		FROM t1
+		WHERE mid = '{$mid}'
+		AND  ymd = '{$Ymd}'
+		LIMIT 1
+		;";
+		$stmt = $conn->prepare($sql);
+		$stmt->execute();
+		while ($row = $stmt->fetch()) {
+			$time_sum=round($row[0]/60,1);
+		}
+
+		//持ち時間のこり
+		if($_setB[mochi]==""){
+			//$_setB[mochi]="12";
+			$time_zan_s="";
+		}else{
+			$time_zan=$_setB[mochi]-$time_sum;
+			$time_zan_s="残:{$time_zan}";
+		}
+
+	    echo $html_timer=<<<EOM
+		<script>
+		$(document).ready(function(){
+		  var sec = 0;
+		  var min = 0;
+		  var hour = 0;
+
+		  var timer;
+
+		  // スタート
+		  $('#start').click(function() {
+
+		  	sound2();//音
+
+		    // 00:00:00から開始
+		    sec = 0;
+		    min = 0;
+		    hour = 0;
+		    $('#clock').html('00:00:00');
+		    timer = setInterval(countup, 1000);
+
+		    $(this).prop('disabled', true);
+		    $('#stop,#reset').prop('disabled', false);
+
+			//id取得
+			var id = $(this).attr("id"); 
+			var val = $(this).val();
+			//alert(id);
+			//POST送信
+			var postData = {"ip_id":id, "ip_val":val};
+			$.post("{$url}",postData);
+
+		  });
+
+		  // ストップ
+		  $('#stop').click(function() {
+		  	
+		  	//sound3();//音
+
+		    // 一時停止
+		    clearInterval(timer);
+
+		    $(this).prop('disabled', true);
+		    $('#restart').prop('disabled', false);
+		    $('#start').prop('disabled', false);	    
+
+			//id取得
+			var id = $(this).attr("id"); 
+			var val = $(this).val();
+			//alert(id);
+			//POST送信
+			var postData = {"ip_id":id, "ip_val":val};
+			$.post("{$url}",postData);
+
+			location.href='{$url}?&set=2';
+		  });
+
+		  // リスタート
+		  $('#restart').click(function() {
+		    // 一時停止から再開
+		    timer = setInterval(countup, 1000);
+
+		    $(this).prop('disabled', true);
+		    $('#stop').prop('disabled', false);
+		  });
+
+		  // リセット
+		  $('#reset').click(function() {
+		    // 初期状態
+		    sec = 0;
+		    min = 0;
+		    hour = 0;
+		    $('#clock').html('00:00:00');
+		    clearInterval(timer);
+
+		    $('#stop,#restart,#reset').prop('disabled', true);
+		    $('#start').prop('disabled', false);
+		  });
+
+		 /**
+		  * カウントアップ
+		  */
+		  function countup()
+		  {
+		    sec += 1;
+
+		    if (sec > 59) {
+		      sec = 0;
+		      min += 1;
+		    }
+
+		    if (min > 59) {
+		      min = 0;
+		      hour += 1;
+		    }
+
+		    // 0埋め
+		    sec_number = ('0' + sec).slice(-2);
+		    min_number = ('0' + min).slice(-2);
+		    hour_number = ('0' + hour).slice(-2);
+
+		    $('#clock').html(hour_number + ':' +  min_number + ':' + sec_number);
+		  }
+		});
+		</script>
+		<style>
+			input{
+				font-size:20px;
+			}
+			.odometer{
+				font-size:22px;
+				padding-top:5px;			
+			}
+		</style>
+
+		<!-- 音声ファイルの読み込み -->
+		<audio id="sound-file2" preload="auto">
+			<source src="2.mp3" type="audio/mp3">
+		</audio>
+		<script>
+		function sound2(){
+		// [ID:sound-file]の音声ファイルを再生[play()]する
+		document.getElementById( 'sound-file2' ).play() ;}
+		</script>
+
+		<!--表示-->
+		<div id="clock">00:00:00</div>
+		<form style="float:left;margin-right:10px;">
+			<input type="button" id="start" class=ip value="Start">
+			<input type="button" id="stop" value="Stop" class=ip disabled>
+			<!--<input type="button" id="restart" value="Restart" disabled>
+			<input type="button" id="reset" value="Reset" disabled>-->		
+		</form>
+
+		<!--持ち時間消費-->
+		<script src="{$FILE_DOMAIN2}/js/odometer-master/odometer.js"></script>
+		<link rel="stylesheet" href="{$FILE_DOMAIN2}/js/odometer-master/themes/odometer-theme-train-station.css" />	
+		<div class='odometer'>0</div>
+		<script>
+		  setTimeout(function(){
+		    $('.odometer').html('{$time_sum}');
+		  }, 1000);
+		</script>
+
+		{$time_zan_s}
+
+EOM;
+
+	  }//end:function
+ 
+}//end:class
+
 ?>		  
