@@ -5,11 +5,12 @@ include("define.php");//サーバ定義
 //配列をファイルから読み込み
 $_set = unserialize(file_get_contents("_set{$_GET[k]}.dat"));//設定データ
 $_setB = unserialize(file_get_contents("_setB{$_GET[k]}.dat"));//設定データ
+//print_r($_setB);
 $ph1_size=$_setB[icon_s];//顔写真アイコンサイズ 30px;
 //配列をファイルから読み込み
 $_entry = unserialize(file_get_contents("_entry{$_GET[k]}.dat"));//入室データ
 //print_r($_entry);
-
+//日付等
 $NT=date("Y-m-d");
 $NT2=date("H:i");
 $TM=time();
@@ -18,15 +19,18 @@ $url = basename($_SERVER["REQUEST_URI"]);
 $user=urldecode($_COOKIE["user"]);
 
 //-----------ユーザー認証-------------------------//
+//$_COOKIE["mid"]="";//debug1
+//if ($_COOKIE["mid"]<>""){//debug2
 if (isset($_COOKIE["mid"])){
 	$mid = $_COOKIE["mid"];
-	//$mid="2127";
+	//$mid="1";//debug3
 	$html=new showHtml();
 	$person=$html->showPh($mid);
 	//print_r($person);
 	$logout = "login.php?url=".urlencode($url)."&logout=1";
 }else{
 	$mid="0";
+	$person[0]=$user;
 }	
 //$mid="0";//debug
 
@@ -43,15 +47,14 @@ if (isset($_COOKIE["user"])){
 }	
 */
 
-//------------POST処理-----------------//
-/*
-if($_POST[ac]<>""):
-	list(,$_mid)=explode("\t",$_POST[ac]);
-	$ac_en=urlencode($_POST[ac]);
-	echo "<script>location.href = 'indexb2.php?mid={$_mid}&ac={$ac_en}';</script>"; 
-endif;
-*/
-//$person=showPh($mid);
+//------------支払データ-----------------//
+$_setC = unserialize(file_get_contents("_setC{$_GET[k]}.dat"));//支払データ
+//print_r($_setC);
+if($_setC[$person[0]]==1){
+	$checked_pay="checked";
+}else{
+	$checked_pay="";
+}
 
 //============================================//
 //---------------設定-------------------------//
@@ -63,6 +66,7 @@ if($_POST[action]<>""):
   	//配列をファイルから読み込み
   	$_set = unserialize(file_get_contents("_set{$_GET[k]}.dat"));
   	$_setB = unserialize(file_get_contents("_setB{$_GET[k]}.dat"));
+  	$_setC = unserialize(file_get_contents("_setC{$_GET[k]}.dat"));
   	//print_r($_set);exit;
 
 	//print_r($_POST[room]);
@@ -73,6 +77,7 @@ if($_POST[action]<>""):
 	$_setB[info]=$_POST[info];
 	$_setB[icon_s]=$_POST[icon_s];
 	$_setB[mochi]=$_POST[mochi];
+	$_setB[nn]=$_POST[nn];
 	//print_r($_set);
 
 	if($_POST[action]=="1"):
@@ -81,15 +86,24 @@ if($_POST[action]<>""):
 	  	file_put_contents("_setB{$_GET[k]}.dat", serialize($_setB));
 
 	elseif($_POST[action]=="2")://リセット
-		$_set="";//初期化
+		/*$_set="";//初期化
 	  	file_put_contents("_set{$_GET[k]}.dat", serialize($_set));
 		$_setB="";//初期化
 	  	file_put_contents("_setB{$_GET[k]}.dat", serialize($_setB));
+		$_setC="";//初期化
+	  	file_put_contents("_setC{$_GET[k]}.dat", serialize($_setC));
 		$_entry="";//初期化
-	  	file_put_contents("_entry{$_GET[k]}.dat", serialize($_entry));
+	  	file_put_contents("_entry{$_GET[k]}.dat", serialize($_entry));*/
+
+	  	unlink("_set{$_GET[k]}.dat");
+	  	unlink("_setB{$_GET[k]}.dat");
+	  	unlink("_setC{$_GET[k]}.dat");
+	  	unlink("_entry{$_GET[k]}.dat");
+
   	endif;
 
-	$url=str_replace("&set=1", "", $url);
+	//$url=str_replace("set=1", "", $url);
+	$url="index?k={$_GET[k]}";
   	echo "<script>location.href = '{$url}';</script>";
 
 endif;
@@ -181,6 +195,20 @@ if($_GET[set]==2):
 	//$timer->html_h();
 	$timer->html_timer();
 	//$html->html_r();
+endif;
+
+//------------曲入力画面-----------------//
+if($_GET[set]==3):
+	$kdb=new kdb();
+	$kdb->html_h();
+	$kdb->html_kdb();
+endif;
+
+//------------出欠画面-----------------//
+if($_GET[set]==4):
+	$elist=new elist();
+	$elist->html_h();
+	$elist->html_elist();
 endif;
 
 //============================================//
@@ -279,7 +307,7 @@ class showHtml{
 		<!--animate.css-->
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
 		<!--iframe高さ調整
-		<script src="//vps.pia-no.com/js/jquery-iframe-auto-height-master/dist/iautoh_all.js"></script>	-->		
+		<script src="//{$HP_DOMAIN2}/js/jquery-iframe-auto-height-master/dist/iautoh_all.js"></script>	-->		
 
 		<!--materializecss-->
 		<script>
@@ -316,14 +344,14 @@ class showHtml{
     	  //$('.pushpin').pushpin();
 
 		  //オートコンプリート
-		  $('input.autocomplete').autocomplete({
+		  /*$('input.autocomplete').autocomplete({
 		  data: {
 		    //"Apple": null,
 		    //"Microsoft": null,
 		    //"Google": 'https://placehold.it/250x250'
 		    {$ac}
 		  },
-		　});
+		　});*/
 
 		});
 
@@ -619,7 +647,20 @@ EOM;
 		global $_setB;
 		global $user;
 		global $NT2;
-		global $url;		
+		global $url;
+		global $checked_pay;
+		global $person;
+
+		//------支払-------//
+		if($_POST[pay]<>""):
+ 			//配列をファイルから読み込み
+  			$_setC = unserialize(file_get_contents("_setC{$_GET[k]}.dat"));
+			//$_setC[$mid]=$_POST[pay];
+			$_setC[$person[0]]=$_POST[pay];			
+	  		//配列の中身をファイルに保存
+	  		file_put_contents("_setC{$_GET[k]}.dat", serialize($_setC));
+		endif;	
+		//------//支払-------//
 
 		$html=new showHtml();//mimiIDあり!
 		$person=$html->showPh($mid);
@@ -636,7 +677,7 @@ EOM;
 		    <div class="col s12">
 		      <div class="row">
 		        <div class="input-field col s7">
-		          <i class="material-icons prefix">account_circle</i>
+		          <i id=name class="material-icons prefix">account_circle</i>
 		          <input name=ac type="text" id="autocomplete-input" class="autocomplete" value="{$user}" autocomplete="off">
 		          <label for="autocomplete-input">名前</label>
 		        </div>
@@ -659,7 +700,7 @@ EOM;
 			<div class="f1 row" style="margin:0px 0px;padding:10px;">
 			    <div class="col s12">
 			      <div class="row" style="margin:0px 0px;">
-			        <div class="input-field col s12">
+			        <div id=name class="input-field col s12">
 			        	<img src="{$person[1]}" style='width:56px;padding-right:10px;'><span class=_TEN style='font-size:27px;'>{$person[0]} {$mid}</span>
 			        </div>
 			      </div>
@@ -679,7 +720,7 @@ EOM;
 		foreach ($_set as $key => $value) {
 			if($value[room]==""){continue;}
 			$btn.=<<<EOM
-			<button onClick="sound()" class="btn waves-effect waves-light btn-large {$pulse}" type="submit" name="entry" value="{$value[room]}" style='margin:6px;'>{$value[room]}<i class="material-icons right">send</i></button>
+			<button onClick="sound()" class="btn waves-effect waves-light btn-large animated _bounceInLeft fadeIn _flipInY _fadeInLeft _fadeInDown" type="submit" name="entry" value="{$value[room]}" style='margin:6px;'>{$value[room]}<i class="material-icons right">send</i></button>
 EOM;
 		}
 
@@ -692,7 +733,7 @@ EOM;
 
 			<nav class="cyan darken-2">
 			<p style="font-weight:700;_text-shadow: #fff 0px 1px 2px, #000 0px -1px 1px;">
-				<a style='display: inline-block;font-size:22px;' class=min href={$url}>部屋定員管理くん</a>
+				<a style='display: inline-block;font-size:22px;' class=min href=index>部屋定員管理くん</a>
 				<a style='display: inline-block' href={$url2}?k=1><i class="material-icons ic1">filter_1</i></a>
 				<a style='display: inline-block' href={$url2}?k=2><i class="material-icons ic2">filter_2</i></a>
 				<a style='display: inline-block' href={$url2}?k=3><i class="material-icons ic3">filter_3</i></a>
@@ -703,12 +744,23 @@ EOM;
 
 			<DIV id=contents>
 
+			<script>
+			//タイマー開始時点滅
+			function addPulse2(){
+ 			   $("#name").addClass("TEN");
+			}
+			//タイマー停止時点滅とまる
+			function removePulse2(){
+ 			   $("#name").removeClass("TEN");
+			}
+			</script>
+
 			{$name}
 
 			<form action="{$url}" method="post" enctype="multipart/form-data" class=hoge>
 
 
-			<!-- 音声ファイルの読み込み 9〜10行目にURLを指定 -->
+			<!-- 音声ファイルの読み込み -->
 			<audio id="sound-file" preload="auto">
 				<source src="1.mp3" type="audio/mp3">
 				<!--<source src="1.wav" type="audio/wav">-->
@@ -719,9 +771,51 @@ EOM;
 			document.getElementById( 'sound-file' ).play() ;			}
 			</script>
 
+			<script>
+			//曲入力促す
+			function addPulse(){
+ 			   $("#kform").addClass("pulse");
+			}
+			</script>
+
 		    <div class="row">
 			    <div class="col s12 l12">
 			    {$btn}
+			    <a href={$url2}?_k={$_GET[k]}&set=3><button id="kform" class="btn waves-effect waves-light btn-large pink darken-4" type="button" name="" value="{$value[room]}" style='margin:6px;'>曲入力<i class="material-icons right">border_color</i></button></a>
+			    
+			    <!-- 支払い -->
+		          <script>
+		          $(function(){  
+		            $('.pay').on('change', function() { 
+		              //var val =  $('#switch_sb1').val();
+		              //alert(val);
+		              if ($(".pay").prop("checked") == true) {
+		                var val=1;               
+		                //$("#switch_sb1").prop("checked",true);
+		              } else {
+		                var val=0;
+		                //$("#switch_sb1").prop("checked",false);
+		              }
+		              //alert(val);
+		              //var postData = {"dark":val,"sb_dark":"1"};
+		              var postData = {"pay":val};
+		              $.post("{$url}",postData);
+		              //location.href = '{$url_base}&sb1=' + val;  
+		              //location.href = '{$url}';  
+		            })
+		          });
+		          </script>
+			  	<div style='margin-top:10px;margin-left:10px;' class="switch">
+			    <label>
+			      未払
+			      <input class=pay type="checkbox" {$checked_pay}>
+			      <span class="lever"></span>
+			      支払
+			    </label>
+			    <a href="index?k={$_GET[k]}&set=4" style="margin-left:20px;" class="btn-floating btn-large waves-effect waves-light red"><i class="material-icons">playlist_add_check</i></a>
+			  	</div>
+			   <!-- //支払い -->
+
 			    </div>    	
 			</div>
 
@@ -847,6 +941,10 @@ EOM;
 EOM;
 		}
 
+		if($_GET[k]<>""){
+			$hide="hide";
+			$hide2="<a style='font-size:20px;color:aliceblue;' href=index?set=1#footer2>練習会回数設定<i class='material-icons left'>send</i></a>";
+		}
 		echo $html_c2=<<<EOM
 		<style>
 		body{
@@ -896,27 +994,31 @@ EOM;
 						
 						<button style="margin-left:-20px;" class="btn waves-effect waves-light btn-large pulse" type="submit" name="action" value=1>確定<i class="material-icons right">send</i></button>
 						<a href="javascript:history.back();"><button style="margin-right:10px;" class="btn waves-effect waves-light btn-large blue-grey darken-2" type="button" name="" value=>戻る<!--<i class="material-icons right">send</i>--></button></a>
-						<button class="btn waves-effect waves-light btn-large pink darken-3" type="submit" name="action" value=2>リセット<i class="material-icons right">send</i></button>
-						<p style='color:pink'>リセット押すと、データが初期化されます</p>
+						<button class="btn waves-effect waves-light btn-large pink darken-3" type="submit" name="action" value=2>リセット<i class="material-icons right">warning</i></button>
+						<p style='color:pink'><i class="material-icons">new_releases</i>リセット押すと、データが初期化されます</p>
 					</div>
 
 					<div class="row">
+				    	<div class="col s3">
+				    		{$hide2}	      				
+	 	     				<input class="{$hide}" type="text" name="nn" value="{$_setB[nn]}" placeholder="練習会回数" style="color:aliceblue;padding-left:5px" autocomplete="off"/>
+	      				</div>
 				    	<div class="col s1">
 	      					<i class="material-icons">account_circle</i>
 	      				</div>
-				    	<div class="col s8">
+				    	<div class="col s5">
 				    		<p class="range-field">
 	      					<input type="range" name="icon_s" min="30" max="100" value="{$_setB[icon_s]}" />
 	      					</p>
 	      				</div>
 				    	<div class="col s3">	      				
-	 	     				<input type="text" name="mochi" value="{$_setB[mochi]}" placeholder="持ち時間(分)" style="padding-left:5px"/>
+	 	     				<input type="text" name="mochi" value="{$_setB[mochi]}" placeholder="持ち時間(分)" style="padding-left:5px" autocomplete="off"/>
 	      				</div>
 	      			</div>	
 
 				</form>
 
-				<p style='height:30px;'></p>
+				<p id=footer2 style='height:30px;'></p>
 
 			</DIV>
 
@@ -935,6 +1037,7 @@ EOM;
 		if($_GET[k]==""){
 			$url="{$url}?";	
 		}
+		$url3="index?k={$_GET[k]}&set=1";
 		echo $html_f=<<<EOM
 		    <footer class="page-footer">
 		      <div class="container2" style='width:97%'>
@@ -946,13 +1049,13 @@ EOM;
 		            <br/><a style="color:white;" href=https://github.com/lavierx/room>https://github.com/lavierx/room</a>
 		            </p>
 		            <br clear=all>     
-		            <p class="grey-text text-lighten-4 addr">　<i class="material-icons">build</i><a style='color:white;font-size:19px;' href={$url}&set=1 _data-lity>部屋設定</a></p>
+		            <p class="grey-text text-lighten-4 addr">　<i class="material-icons">build</i><a style='color:white;font-size:19px;' href={$url3} _data-lity>部屋設定</a></p>
 		          </div>
 		          <div class="col l4 offset-l2 s12">
 		            <p class="white-text"><i class="fas fa-info fa-fw"></i>お問い合わせ</p>
 		            <ul>
 		              <li><a class="grey-text text-lighten-3" href="mailto:info@{$HP_DOMAIN}"><i class="fa fa-envelope"></i> info@{$HP_DOMAIN}</a></li>
-		              <li><a class="grey-text text-lighten-3" href="index">DEMO</a></li>
+		              <li><a class="grey-text text-lighten-3" href="index?k={$_GET[k]}&set=4">出欠</a></li>
 		              <li><a class="grey-text text-lighten-3" href="{$logout}">LOGOUT</a></li>
 		              		              
 		            </ul>
@@ -1149,6 +1252,8 @@ class timer extends showHtml{
 		  $('#start').click(function() {
 
 		  	sound2();//音
+		  	//タイマースタート点滅
+		  	window.parent.addPulse2();
 
 		    // 00:00:00から開始
 		    sec = 0;
@@ -1174,6 +1279,11 @@ class timer extends showHtml{
 		  $('#stop').click(function() {
 		  	
 		  	//sound3();//音
+		  	//曲フォームパルス
+		  	// $("#kform").addClass("pulse");
+		  	window.parent.addPulse();
+		  	//タイマー点滅停止
+		  	window.parent.removePulse2();
 
 		    // 一時停止
 		    clearInterval(timer);
@@ -1288,4 +1398,1308 @@ EOM;
  
 }//end:class
 
+
+
+//============================================//
+//---------------曲入力-------------------------//
+//============================================//
+
+//継承クラス
+class kdb extends showHtml{
+
+	 //入力フォーム
+	 public function html_kdb(){
+		global $_setB;
+		$nn=$_setB[nn];//練習会回数
+		//$nn="116";//debug
+		global $person;
+		global $url;
+		global $KDB;
+		//print_r($_setB);
+
+		//アイテム削除
+		if($_POST[del_item]<>""):
+			//echo $_POST[del_item];
+			$dsn = $KDB;
+			$conn = new PDO($dsn);
+
+			$sql="
+			DELETE FROM t1
+			WHERE ((id = '{$_POST[del_item]}'));
+			;";
+			$stmt = $conn->prepare($sql);
+			$stmt->execute();
+
+		endif;
+
+		//曲目登録
+		if($_POST[action2]=="1"):
+			//echo $_POST[action2];exit;
+			$dsn = $KDB;
+			$conn = new PDO($dsn);
+			$sql="
+			INSERT INTO t1 (n, tit, com, cmt, nam)
+			VALUES ('{$nn}', '{$_POST[tit]}', '{$_POST[com]}', '{$_POST[cmt]}', '{$_POST[nam]}');
+			;";
+			//echo $sql;exit;
+			if($_POST[tit]<>''){//タイトルがあれば				
+				$stmt = $conn->prepare($sql);
+				$stmt->execute();
+			}
+		endif;
+
+		//オートコンプリート　曲目
+		$dsn = $KDB;
+		$conn = new PDO($dsn);
+
+		$sql="
+		SELECT *
+		FROM t1
+		ORDER BY id DESC 
+		LIMIT 5000
+		;";
+		$stmt = $conn->prepare($sql);
+		$stmt->execute();
+		while ($row = $stmt->fetch()) {
+			if($row[tit]==""){continue;}
+			if($row[com]==""){continue;}			
+			$ac_tit.="'{$row[tit]}': null,";
+			$ac_com.="'{$row[com]}': null,";			
+		}
+
+		//曲目一覧取得
+		$dsn = $KDB;
+		$conn = new PDO($dsn);
+
+		$sql="
+		SELECT *, rowid
+		FROM t1
+		WHERE n = '{$nn}'
+		ORDER BY id DESC
+		LIMIT 500		
+		;";
+		$stmt = $conn->prepare($sql);
+		$stmt->execute();
+		while ($row = $stmt->fetch()) {
+			//if($row[tit]==""){continue;}
+			//if($row[com]==""){continue;}			
+			//------データセット-------// 
+			$dataSet[]= array(
+				 "<!--id-->
+				  {$row[id]}
+				  ",
+				 "<!--タイトル-->
+				  {$row[tit]}
+				  ",
+				 "<!--作曲者-->
+				  {$row[com]}
+				  ",
+				 "<!--コメント-->
+				  {$row[cmt]}
+				  ",
+				 "<!--名前-->
+				  {$row[nam]}
+				  ",				
+				"<!--削除-->
+				<button class='btn waves-effect waves-light btn-large blue-grey darken-2' type='submit' name='del_item' value='{$row[id]}'><i class='material-icons'>delete_forever</i></button>
+				  ",
+			);
+			$j++; //データ総数
+
+		//------------------------------------------------------  
+		}//END:ループ
+		//------------------------------------------------------
+
+		//配列をjsonに変換!
+		$dataSet_j=json_encode($dataSet);
+
+		//================================================================
+		// カラム定義
+		//================================================================
+
+		echo $dataSet_js=<<<EOM
+		<script>
+		var dataSet = {$dataSet_j};
+		//カラム定義 
+		$(document).ready(function() {
+		    $('#1').DataTable( {
+		        data: dataSet,
+		        columns: [
+		           { title: "id {$_st[0]}" ,"width": "1vw"},
+		           { title: "曲目 {$_st[1]}" ,"width": "2vw"},
+		           { title: "作曲者 {$_st[2]}" ,"width": "2vw"},
+		           { title: "<i class='material-icons'>keyboard_voice</i> {$_st[3]}" ,"width": "2vw"},
+		           { title: "名前 {$_st[4]}" ,"width": "2vw"},
+		           { title: " {$_st[4]}" ,"width": "1vw"},
+		         ],
+		        //好きなようにdatatablesのオプション
+		        //language: {
+		            //url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Japanese.json"
+		            //url: "/mi/lib/Japanese.json"
+		        //},
+		        language: {
+		          "sEmptyTable":     "テーブルにデータがありません",
+		          "sInfo":           " _TOTAL_ 件中 _START_ から _END_ まで表示",
+		            "sInfoEmpty":      " 0 件中 0 から 0 まで表示",
+		            "sInfoFiltered":   "（全 _MAX_ 件より抽出）",
+		          "sInfoPostFix":    "",
+		          "sInfoThousands":  ",",
+		            "sLengthMenu":     "_MENU_ 件表示",
+		          "sLoadingRecords": "読み込み中...",
+		            "sProcessing":     "処理中...",
+		          "sSearch":         "検索:",
+		            "sZeroRecords":    "一致するレコードがありません",
+		            "oPaginate": {
+		                "sFirst":    "先頭",
+		                "sLast":     "最終",
+		                "sNext":     "次",
+		                "sPrevious": "前"
+		            },
+		          "oAria": {
+		                "sSortAscending":  ": 列を昇順に並べ替えるにはアクティブにする",
+		                "sSortDescending": ": 列を降順に並べ替えるにはアクティブにする"
+		            }
+		        },
+		       order: [[0, 'desc']],
+		       //order: [[1, 'asc']],
+		       //stateSave: true,
+		       //pageLength: 10,
+		       //paging:   false,//ページング時には不使用!
+		       //ordering: false,//ページング時には不使用!
+		       //searching: false,//ページング時には不使用!
+		       //info:     false,//ページング時には不使用!
+		       displayLength: 10, //初期表示件数
+		       lengthMenu: [[10, 20, 50, 100,-1], [10, 20, 50,100, "ALL"]],
+		       //fixedHeader: true,
+		       //renderer: {
+		       // "header": "jqueryui",
+		       // "pageButton": "bootstrap"
+		       //},
+		       //TRにクラス追加!
+		       "createdRow": function( row, data, dataIndex ) {
+		          if ( data[0]> "0" ) {//期限到来済み
+		            //$(row).addClass( 'purple' );
+		          }
+		          if( data[0]> "0"  ) {//タスク完了
+		            $(row).addClass( 'green' );
+		          }  
+		          if( data[0]> "0" ) {//タスク未設定
+		            //$(row).addClass( 'gray' );
+		          }  
+		        },
+		       //列ごと指定 dt-center BR ls1 min I B lime pink sky fs14 NW dt[-head|-body]-nowrap dt[-head|-body]-justify
+		       columnDefs: [
+		        //{targets: [0],visible: false},
+		        //{className: "order-column", "targets": [0] },
+		        //{className: "NW fs11 ls1", "targets": [0,1] }, 
+		        //{className: "NW _fs11 _ls1", "targets": [3] }, 
+		        //{className: "dt-left fs11 _ls1 B PD7 _NW _lavender", "targets": [4] },   
+		        //{className: "dt-left fs11 ls1 _B PD7 NW", "targets": [20] },                 
+		        {className: "center", "targets": [0,4,5] },
+		       ],
+		       //responsive: true,
+		       buttons: [
+		        'copy', 'excel', 'pdf'
+		       ],
+		    });
+		});
+		</script>
+EOM;
+
+	 	echo $form=<<<EOM
+		<style>
+		body{
+			background: none rgba(0,0,0,1);
+		    background:#37474f;			
+			background: linear-gradient(-45deg, rgba(108, 179, 255, .1), rgba(255, 255,255, .1)) fixed,
+		  	url(img/lbg2.jpg);  		 
+		 	background-size: cover;
+			background-repeat: no-repeat;
+			background-attachment: fixed;
+		}
+		#contents{
+			background: none rgba(0,0,0,.3);
+		    _background:#37474f;			
+		}
+		input {
+		    color: darkkhaki;
+		    font-size:22px !important;
+		    text-align:center;
+		}
+		.lity-container {
+		    z-index: 99999992;
+		    position: relative;
+		    text-align: left;
+		    vertical-align: top;
+		    padding-top:10px;
+		    padding-top:0px;
+		}
+		.btn{
+			margin:5px;
+		} 
+		h1{
+			color:silver;
+		}
+		.row {
+    		margin: 10px 0px;
+		}
+		.autocomplete,.autocomplete2{
+			text-align:left;
+		}
+		</style>
+
+		<!--データテーブルここで読み込み-->
+		<!--  https://datatables.net/reference/option/ -->
+		<!--<script type="text/javascript" src="//code.jquery.com/jquery-2.2.4.min.js"></script>-->
+		
+		<!--<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.18/fh-3.1.4/datatables.min.css"/>
+		<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.18/fh-3.1.4/datatables.min.js"></script>
+		
+		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.18/fh-3.1.4/datatables.min.css"/>
+		<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.18/fh-3.1.4/datatables.min.js"></script>-->
+
+		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.20/fh-3.1.6/r-2.2.3/datatables.min.css"/>
+		<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.20/fh-3.1.6/r-2.2.3/datatables.min.js"></script>
+
+		<!--//データテーブルここで読み込み-->
+
+		<style>
+		/*データセットで追加*/
+			table.display th {
+			z-index: 999;
+			font-size: 13px;
+			background: rgba(0,0,0, 0.8);
+			_background: #343a40;
+			color: white;
+			padding: 7px 7px 4px 7px;
+			_white-space: nowrap;
+			border: 1px rgba(25,25,25, 0.6) solid;
+			border: 0px #343a40 solid;
+		}
+		thead tr{
+			border:2px rgba(25,25,25, 0.6) solid;
+			border-bottom:2px rgba(0,0,0, 0.1) solid;  
+		}
+		table.dataTable {
+			border-collapse: collapse;
+		}
+		table.display tbody {
+			border-top: 3px #777 solid;
+			border-collapse: collapse;
+		}
+
+		/*検索ボックス*/
+		@media screen and ( max-width:1000px ){
+			.dataTables_length,.dataTables_filter{
+				_display:none;
+			} 
+			table.dataTable{
+			    margin-left: -14px;
+			}
+		}
+		/*表示件数*/
+		.dataTables_length{
+			position:fixed !important;
+			bottom:0px !important; 
+			left:130px !important;
+			z-index: 8999;  
+		}
+		.dataTables_length select{
+			height: calc(2.25rem + 0px);
+		}
+		@media (min-width: 576px){
+			.dataTables_wrapper .col-sm-7{
+			-ms-flex: 0 0 57.333333%;
+			flex: 0 0 57.333333%;
+			max-width: 57.33% !important;
+			}
+		}
+
+		/*検索ボックス*/
+		.dataTables_filter {
+			position: fixed !important;
+			bottom: 4px !important;
+			left: 260px !important;
+			z-index: 8999;
+		}
+		.dataTables_filter label,.dataTables_length label{
+			color:silver;
+		}
+		div.dataTables_wrapper div.dataTables_filter input{
+			width:160px !important;
+		}
+		.dataTables_filter input,div.dataTables_wrapper div.dataTables_length select {
+			background-color: #F9F9F9;
+			border:1px solid #333;
+			border: 1px solid #666;  
+			border-radius: 0px;
+			-webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+			box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+			}
+		div.dataTables_wrapper div.dataTables_length label {
+			font-weight: 700;
+		}
+		/*検索ボッスク、件数フィルタのスマホ非表示*/
+		@media screen and (max-width: 480px){
+			.dataTables_length,.dataTables_filter,#navf{
+			display:none !important;
+			}
+			#navh .navbar-collapse{
+			background:rgba(0,0,0,.9);;
+			margin: 25px -10px 0px -10px;
+			padding: 10px 30px;
+			z-index: 999;
+			}
+			#navf .navbar-collapse{
+			background:rgba(0,0,0,.9);;
+			margin: -225px -10px 0px -10px;
+			padding: 10px 30px;
+			z-index: 999;
+			}
+		}
+		/*ページネーション*/
+		.dataTables_info{
+			_font-size:12px;
+			color:silver !important;
+		}
+		.pagination>.disabled>a, .pagination>.disabled>a:focus, .pagination>.disabled>a:hover, .pagination>.disabled>span, .pagination>.disabled>span:focus, .pagination>.disabled>span:hover {
+		background-color: rgba(0,0,0,.1);
+		}
+		.dataTables_wrapper .dataTables_paginate .paginate_button{
+			_position: relative;
+			_float: left;
+			padding: 6px 12px;
+			margin-left: -1px;
+			margin-top:10px;
+			_line-height: 1.42857143;
+			color: #337ab7;
+			text-decoration: none;
+			background-color: rgba(255,255,255,1);
+			border: 1px solid #ddd;
+		}
+
+		/*下部ナビ*/
+		.navbar-brand {
+			float: left;
+			height: 88px;
+			padding: 5px;
+			font-size: 18px;
+			line-height: 80px;
+		}
+		#navf {
+			border-top: 0px silver dimgray;
+			background: rgba(255,255,255, 0.9);
+			background: rgba(0,0,0, 0.3);
+		}
+		.navbar-fixed-bottom {
+			bottom: 0;
+			margin-bottom: 0;
+			border-width: 1px 0 0;
+		}
+		.navbar-fixed-bottom, .navbar-fixed-top {
+			position: fixed;
+			right: 0;
+			left: 0;
+			z-index: 1030;
+		}
+		.navbar-fixed-bottom .navbar-collapse, .navbar-fixed-top .navbar-collapse {
+			max-height: 340px;
+		}
+		.navbar-right{
+			padding-top:25px;
+		}
+		.navbar-right .btn{
+			_border:none;
+		}
+		select.form-control:not([size]):not([multiple]){
+			height: calc(2.25rem + 5px);
+		}
+		/*その他*/
+		table.display td.fs10{
+			font-size:10px !important;
+		}
+		table.display td.fs11{
+			font-size:11px !important;
+		}
+		table.display td.fs14{
+			font-size:14px !important;
+		}
+		table.display td.I{
+			font-style:italic !important;
+		}
+		table.display td.ls1{
+			letter-spacing:-1px !important;
+		}
+		table.display td.B{
+			font-weight:700 !important;
+		}
+		table.display td.NW{
+			white-space: nowrap !important;
+		}
+		table.display td.PD0{
+			padding:0px 0px !important;
+		}
+		table.display td.PD4{
+			padding:4px 4px !important;
+		}
+		table.display td.PD7{
+			padding:7px 7px !important;
+		}
+		table.display td.MW180,table.display th.MW180{
+			max-width:180px !important;
+		}
+
+		table.display td.W40,table.display th.W40{
+			width:40px !important;
+		}
+		table.display td.W90,table.display th.W90{
+			width:90px !important;
+		}
+		table.display td.W180,table.display th.W180{
+			width:180px !important;
+		}
+		table.display td.W220,table.display th.W220{
+			width:220px !important;
+		}
+		table.display td.W270,table.display th.W270{
+			width:270px !important;
+		}
+
+		/*その他*/
+		.btn {
+			display: inline-block;
+			font-size: 0.8rem;
+		}
+
+		#tkikan{
+			font-size:13px;
+		}
+
+		/*infoスペースのmarginつめる!*/
+		#b1{
+			margin: 0px 10px 26px 10px !important;
+		}
+
+		table.display td a.blue{
+			color:#17a2b8 !important;
+		}
+
+		/*input*/
+		input.form-control.ip{
+			padding:2px;
+			border:0px;
+			background:transparent;
+			_background:white;  
+			width:100%;
+			margin-top:0px;
+			text-align:center;
+			font-family:"Times New Roman";
+			font-size:16px;
+			box-shadow: none;
+			box-sizing: content-box;
+		}
+		input.form-control.ip2{
+			padding:2px;
+			border:0px;
+			background:transparent;
+			_background:white;  
+			width:100%;
+			margin-top:0px;
+			text-align:center;
+			font-family:"Times New Roman";
+			font-size:13px;
+			box-shadow: none;
+			box-sizing: content-box;
+		}
+
+		/*メニュー*/    
+		.btn-primary{color:#fff;background-color:#337ab7;border-color:#2e6da4}.btn-primary.focus,.btn-primary:focus{color:#fff;background-color:#286090;border-color:#122b40}.btn-primary:hover{color:#fff;background-color:#286090;border-color:#204d74}
+		.btn-info{color:#fff;background-color:#5bc0de;border-color:#46b8da}.btn-info.focus,.btn-info:focus{color:#fff;background-color:#31b0d5;border-color:#1b6d85}.btn-info:hover{color:#fff;background-color:#31b0d5;border-color:#269abc}
+
+		/*ダーク　テーブルセル*/
+		table.display td.sky{
+			color:#b2ebf2 !important;
+		}
+		table.display td.pink{
+			color:#f3e5f5 !important;
+		}
+		table.display td.lime{
+			color:#f9fbe7 !important;
+		}
+		table.display td.lavender,table.display td.lavender a{
+			color:lavender !important;
+		}
+		/*行カラー*/
+		table.display tr.purple {
+			background: #220000 !important;
+		}
+		table.display tr.gray {
+			_background: #D1D6ED !important;
+			background: #263238 !important;     
+		}
+		table.display tr.green{
+			background:#001100 !important;
+		}
+		.dataTables_info{
+			color:silver;
+		}
+		/*テーブル*/
+		table.display td {
+			color: silver !important;
+			border: #777 1px solid !important;
+			_font-weight:700;
+		}
+		table.dataTable td.BR {
+			border-right: 3px double #888 !important;
+		}
+		table.dataTable td input[type=number] {
+			color: #f8f8ff;
+		}
+
+		table.display td a.text-danger, .ok {
+			color: #d81b60 !important;
+		}
+
+		.dataTables_length {
+		    position: fixed !important;
+		    bottom: 0px !important;
+		    left: 130px !important;
+		    z-index: 8999;
+		    display: none;
+		}
+
+		div.dataTables_wrapper div.dataTables_filter input {
+		    width: 160px !important;
+		    display: none;
+		}
+
+		.dataTables_filter{
+		    display: none;			
+		}
+
+		table.dataTable.display tbody tr.odd>.sorting_1, table.dataTable.order-column.stripe tbody tr.odd>.sorting_1 {
+   		 	background-color: transparent;
+		}
+		table.dataTable.display tbody tr.even>.sorting_1, table.dataTable.order-column.stripe tbody tr.even>.sorting_1 {
+    		background-color: transparent;
+		}
+		table.dataTable tbody th, table.dataTable tbody td {
+	    	padding: 5px 10px;
+
+		}
+		</style>
+		<!--データテーブルここまで-->
+
+		<style>
+		.autocomplete-content.dropdown-content{
+			z-index:99999999;
+		}
+		.hide{
+			display:none;
+		}
+		</style>
+
+		<script>
+		//フォーム入力時テーブル消す
+		$(document).ready(function(){
+		    $('.ipp').on('focus', function() {
+		        //alert("d");
+		        $(".table_data").addClass("hide");
+		    });
+		});
+		</script>
+		<script>
+		// 部分リロード
+		/*function reloadHoge() {
+		  $.get(document.URL).done(function(data, textStatus, jqXHR) {
+		    const doc = new DOMParser().parseFromString(data, 'text/html');
+		    $('.display').html(doc.querySelector('.display').innerHTML);
+		  });
+		}
+		setInterval(reloadHoge, 5000);*/
+		</script>
+
+		<BODY><DIV class="container animated _fadeIn">
+
+			<DIV id=contents>
+
+				<form action="{$url}" method="post" enctype="multipart/form-data" class="animated fadeIn">
+
+				<h1><i class="material-icons">account_circle</i> {$person[0]} <span style='color:#e1f5fe'>第{$nn}回練習会</span></h1>
+
+				<!--曲目-->
+				<div class="row">
+				    <div class="col s12">
+				      <div class="row">
+				        <div class="input-field col s12">
+				          <i class="material-icons prefix">textsms</i>
+				          <input name='tit' type="text" id="autocomplete-input" class="autocomplete ipp" autocomplete="off">
+				          <label for="autocomplete-input">曲名</label>
+				        </div>
+				      </div>
+				    </div>
+				</div>
+
+				<script>
+				$(document).ready(function(){
+				    $('input.autocomplete').autocomplete({
+				      data: {
+				        //"Apple": null,
+				        //"Microsoft": null,
+				        {$ac_tit}
+				      },
+				    });
+				});
+				</script>
+
+				<!--作曲者-->
+				<div class="row">
+				    <div class="col s12">
+				      <div class="row">
+				        <div class="input-field col s12">
+				          <i class="material-icons prefix">textsms</i>
+				          <input name='com' type="text" id="autocomplete-input2" class="autocomplete2 ipp" autocomplete="off">
+				          <label for="autocomplete-input2">作曲者</label>
+				        </div>
+				      </div>
+				    </div>
+				</div>
+
+				<script>
+				$(document).ready(function(){
+				    $('input.autocomplete2').autocomplete({
+				      data: {
+				        //"Apple": null,
+				        //"Microsoft": null,
+				        {$ac_com}
+				      },
+				    });
+				});
+				</script>
+
+				<!--コメント-->
+		        <div class="row">
+		          <div class="input-field col s12">
+		            <textarea name=cmt id="textarea2" class="materialize-textarea ipp"></textarea>
+		            <label for="textarea2">コメント</label>
+		          </div>
+		        </div>
+
+		        <div class="row" style='text-align:center;'>
+					<button style="" class="btn waves-effect waves-light btn-large pulse" type="submit" name="action2" value=1>送信<i class="material-icons right">send</i></button>
+					<!--<button style="margin-left:10px;" class="btn waves-effect waves-light btn-large pink darken-4" type="reset" value=1>リセット<i class="material-icons right">send</i></button>-->
+					<a href="index?k={$_GET[_k]}"><button style="margin-right:10px;" class="btn waves-effect waves-light btn-large blue-grey darken-2" type="button" name="" value=>戻る<!--<i class="material-icons right">send</i>--></button></a>
+				</div>
+
+				<input type=hidden name=nam value="{$person[0]}">	
+
+				</form>	
+
+				 <!--テーブル-->
+				 <form action="{$url}" method="post" enctype="multipart/form-data" class="table_data">
+					 <div class="row" style="margin-left: -10px;">
+					    <div class="col s12">
+					   	 <table id="1" class="display" width="100%"></table>
+					    </div>
+					 </div>
+				 </form> 
+
+			</DIV>	 
+
+		</DIV></BODY>	
+
+
+EOM;
+	  }//end:function
+
+
+}//end:class
+
+//============================================//
+//---------------出欠リスト---------------------//
+//============================================//
+
+//継承クラス
+class elist extends showHtml{
+
+	 //入力フォーム
+	 public function html_elist(){
+		global $_setB;
+		$nn=$_setB[nn];//練習会回数
+		//$nn="116";//debug
+		global $person;
+		global $url;
+		global $_setC;
+		global $_entry;
+		//print_r($_setC);
+
+		foreach ($_entry as $key => $value) {
+			foreach ($value as $key2 => $value2) {
+				//if($row[tit]==""){continue;}
+				//if($row[com]==""){continue;}
+				list($_dat1,$_dat2,$_dat3)=explode("\t",$value2);
+				$_dat3_s=date("H:i:s",$_dat3);
+				$_dat1_s="<img src='{$_dat2}' style='width:40px;height:40px;float:left;margin-right:10px;'>{$_dat1}";
+				$payed = $_setC[$_dat1]==1 ? "支払済":"";		
+				//------データセット-------// 
+				$dataSet[]= array(
+					 "<!--入室-->
+					  {$_dat3_s}
+					  ",
+					 "<!--入室-->
+					  {$key}
+					  ",
+					 "<!--名前-->
+					  {$_dat1_s}
+					  ",
+					 "<!--支払い-->
+					  <h1 style='text-align:center;'>{$payed}</h1>
+					  ",
+				);
+			}	
+			$j++; //データ総数
+		//------------------------------------------------------  
+		}//END:ループ
+		//------------------------------------------------------
+
+		//配列をjsonに変換!
+		$dataSet_j=json_encode($dataSet);
+
+		//================================================================
+		// カラム定義
+		//================================================================
+
+		echo $dataSet_js=<<<EOM
+		<script>
+		var dataSet = {$dataSet_j};
+		//カラム定義 
+		$(document).ready(function() {
+		    $('#1').DataTable( {
+		        data: dataSet,
+		        columns: [
+		           { title: "最終入室 {$_st[0]}" ,"width": "1vw"},
+		           { title: " {$_st[1]}" ,"width": "1vw"},
+		           { title: "名前 {$_st[2]}" ,"width": "2vw"},
+		           { title: "支払い {$_st[3]}" ,"width": "2vw"},
+		         ],
+		        //好きなようにdatatablesのオプション
+		        //language: {
+		            //url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Japanese.json"
+		            //url: "/mi/lib/Japanese.json"
+		        //},
+		        language: {
+		          "sEmptyTable":     "テーブルにデータがありません",
+		          "sInfo":           " _TOTAL_ 件中 _START_ から _END_ まで表示",
+		            "sInfoEmpty":      " 0 件中 0 から 0 まで表示",
+		            "sInfoFiltered":   "（全 _MAX_ 件より抽出）",
+		          "sInfoPostFix":    "",
+		          "sInfoThousands":  ",",
+		            "sLengthMenu":     "_MENU_ 件表示",
+		          "sLoadingRecords": "読み込み中...",
+		            "sProcessing":     "処理中...",
+		          "sSearch":         "検索:",
+		            "sZeroRecords":    "一致するレコードがありません",
+		            "oPaginate": {
+		                "sFirst":    "先頭",
+		                "sLast":     "最終",
+		                "sNext":     "次",
+		                "sPrevious": "前"
+		            },
+		          "oAria": {
+		                "sSortAscending":  ": 列を昇順に並べ替えるにはアクティブにする",
+		                "sSortDescending": ": 列を降順に並べ替えるにはアクティブにする"
+		            }
+		        },
+		       order: [[0, 'desc']],
+		       //order: [[1, 'asc']],
+		       //stateSave: true,
+		       //pageLength: 10,
+		       //paging:   false,//ページング時には不使用!
+		       //ordering: false,//ページング時には不使用!
+		       //searching: false,//ページング時には不使用!
+		       //info:     false,//ページング時には不使用!
+		       displayLength: 50, //初期表示件数
+		       lengthMenu: [[10, 20, 50, 100,-1], [10, 20, 50,100, "ALL"]],
+		       fixedHeader: true,
+		       //renderer: {
+		       // "header": "jqueryui",
+		       // "pageButton": "bootstrap"
+		       //},
+		       //TRにクラス追加!
+		       "createdRow": function( row, data, dataIndex ) {
+		          if ( data[0]> "0" ) {//期限到来済み
+		            //$(row).addClass( 'purple' );
+		          }
+		          if( data[0]> "0"  ) {//タスク完了
+		            $(row).addClass( 'green' );
+		          }  
+		          if( data[0]> "0" ) {//タスク未設定
+		            //$(row).addClass( 'gray' );
+		          }  
+		        },
+		       //列ごと指定 dt-center BR ls1 min I B lime pink sky fs14 NW dt[-head|-body]-nowrap dt[-head|-body]-justify
+		       columnDefs: [
+		        //{targets: [0],visible: false},
+		        //{className: "order-column", "targets": [0] },
+		        //{className: "NW fs11 ls1", "targets": [0,1] }, 
+		        //{className: "NW _fs11 _ls1", "targets": [3] }, 
+		        //{className: "dt-left fs11 _ls1 B PD7 _NW _lavender", "targets": [4] },   
+		        //{className: "dt-left fs11 ls1 _B PD7 NW", "targets": [20] },                 
+		        {className: "center", "targets": [0] },
+		        {className: "BR _lime center", "targets": [1] },
+		       ],
+		       //responsive: true,
+		       buttons: [
+		        'copy', 'excel', 'pdf'
+		       ],
+		    });
+		});
+		</script>
+EOM;
+
+	 	echo $form=<<<EOM
+		<style>
+		body{
+			background: none rgba(0,0,0,1);
+		    background:#37474f;			
+			background: linear-gradient(-45deg, rgba(108, 179, 255, .1), rgba(255, 255,255, .1)) fixed,
+		  	url(img/lbg2.jpg);  		 
+		 	background-size: cover;
+			background-repeat: no-repeat;
+			background-attachment: fixed;
+		}
+		#contents{
+			background: none rgba(0,0,0,.3);
+		    _background:#37474f;			
+		}
+		input {
+		    color: darkkhaki;
+		    font-size:22px !important;
+		    text-align:center;
+		}
+		.lity-container {
+		    z-index: 99999992;
+		    position: relative;
+		    text-align: left;
+		    vertical-align: top;
+		    padding-top:10px;
+		    padding-top:0px;
+		}
+		.btn{
+			margin:5px;
+		} 
+		h1{
+			color:silver;
+		}
+		.row {
+    		margin: 10px 0px;
+		}
+		.autocomplete,.autocomplete2{
+			text-align:left;
+		}
+		</style>
+
+		<!--データテーブルここで読み込み-->
+		<!--  https://datatables.net/reference/option/ -->
+		<!--<script type="text/javascript" src="//code.jquery.com/jquery-2.2.4.min.js"></script>-->
+		
+		<!--<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.18/fh-3.1.4/datatables.min.css"/>
+		<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.18/fh-3.1.4/datatables.min.js"></script>
+		
+		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.18/fh-3.1.4/datatables.min.css"/>
+		<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.18/fh-3.1.4/datatables.min.js"></script>-->
+
+		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.20/fh-3.1.6/r-2.2.3/datatables.min.css"/>
+		<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.20/fh-3.1.6/r-2.2.3/datatables.min.js"></script>
+
+		<!--//データテーブルここで読み込み-->
+
+		<style>
+		/*データセットで追加*/
+			table.display th {
+			z-index: 999;
+			font-size: 13px;
+			background: rgba(0,0,0, 0.8);
+			_background: #343a40;
+			color: white;
+			padding: 7px 7px 4px 7px;
+			_white-space: nowrap;
+			border: 1px rgba(25,25,25, 0.6) solid;
+			border: 0px #343a40 solid;
+		}
+		thead tr{
+			border:2px rgba(25,25,25, 0.6) solid;
+			border-bottom:2px rgba(0,0,0, 0.1) solid;  
+		}
+		table.dataTable {
+			border-collapse: collapse;
+		}
+		table.display tbody {
+			border-top: 3px #777 solid;
+			border-collapse: collapse;
+		}
+
+		/*検索ボックス*/
+		@media screen and ( max-width:1000px ){
+			.dataTables_length,.dataTables_filter{
+				_display:none;
+			} 
+			table.dataTable{
+			    _margin-left: -14px;
+			}
+		}
+		/*表示件数*/
+		.dataTables_length{
+			position:fixed !important;
+			bottom:0px !important; 
+			left:130px !important;
+			z-index: 8999;  
+		}
+		.dataTables_length select{
+			height: calc(2.25rem + 0px);
+		}
+		@media (min-width: 576px){
+			.dataTables_wrapper .col-sm-7{
+			-ms-flex: 0 0 57.333333%;
+			flex: 0 0 57.333333%;
+			max-width: 57.33% !important;
+			}
+		}
+
+		/*検索ボックス*/
+		.dataTables_filter {
+			position: fixed !important;
+			bottom: 4px !important;
+			left: 260px !important;
+			z-index: 8999;
+		}
+		.dataTables_filter label,.dataTables_length label{
+			color:silver;
+		}
+		div.dataTables_wrapper div.dataTables_filter input{
+			width:160px !important;
+		}
+		.dataTables_filter input,div.dataTables_wrapper div.dataTables_length select {
+			background-color: #F9F9F9;
+			border:1px solid #333;
+			border: 1px solid #666;  
+			border-radius: 0px;
+			-webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+			box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+			}
+		div.dataTables_wrapper div.dataTables_length label {
+			font-weight: 700;
+		}
+		/*検索ボッスク、件数フィルタのスマホ非表示*/
+		@media screen and (max-width: 480px){
+			.dataTables_length,.dataTables_filter,#navf{
+			display:none !important;
+			}
+			#navh .navbar-collapse{
+			background:rgba(0,0,0,.9);;
+			margin: 25px -10px 0px -10px;
+			padding: 10px 30px;
+			z-index: 999;
+			}
+			#navf .navbar-collapse{
+			background:rgba(0,0,0,.9);;
+			margin: -225px -10px 0px -10px;
+			padding: 10px 30px;
+			z-index: 999;
+			}
+		}
+		/*ページネーション*/
+		.dataTables_info{
+			_font-size:12px;
+			color:silver !important;
+		}
+		.pagination>.disabled>a, .pagination>.disabled>a:focus, .pagination>.disabled>a:hover, .pagination>.disabled>span, .pagination>.disabled>span:focus, .pagination>.disabled>span:hover {
+		background-color: rgba(0,0,0,.1);
+		}
+		.dataTables_wrapper .dataTables_paginate .paginate_button{
+			_position: relative;
+			_float: left;
+			padding: 6px 12px;
+			margin-left: -1px;
+			margin-top:10px;
+			_line-height: 1.42857143;
+			color: #337ab7;
+			text-decoration: none;
+			background-color: rgba(255,255,255,1);
+			border: 1px solid #ddd;
+		}
+
+		/*下部ナビ*/
+		.navbar-brand {
+			float: left;
+			height: 88px;
+			padding: 5px;
+			font-size: 18px;
+			line-height: 80px;
+		}
+		#navf {
+			border-top: 0px silver dimgray;
+			background: rgba(255,255,255, 0.9);
+			background: rgba(0,0,0, 0.3);
+		}
+		.navbar-fixed-bottom {
+			bottom: 0;
+			margin-bottom: 0;
+			border-width: 1px 0 0;
+		}
+		.navbar-fixed-bottom, .navbar-fixed-top {
+			position: fixed;
+			right: 0;
+			left: 0;
+			z-index: 1030;
+		}
+		.navbar-fixed-bottom .navbar-collapse, .navbar-fixed-top .navbar-collapse {
+			max-height: 340px;
+		}
+		.navbar-right{
+			padding-top:25px;
+		}
+		.navbar-right .btn{
+			_border:none;
+		}
+		select.form-control:not([size]):not([multiple]){
+			height: calc(2.25rem + 5px);
+		}
+		/*その他*/
+		table.display td.fs10{
+			font-size:10px !important;
+		}
+		table.display td.fs11{
+			font-size:11px !important;
+		}
+		table.display td.fs14{
+			font-size:14px !important;
+		}
+		table.display td.I{
+			font-style:italic !important;
+		}
+		table.display td.ls1{
+			letter-spacing:-1px !important;
+		}
+		table.display td.B{
+			font-weight:700 !important;
+		}
+		table.display td.NW{
+			white-space: nowrap !important;
+		}
+		table.display td.PD0{
+			padding:0px 0px !important;
+		}
+		table.display td.PD4{
+			padding:4px 4px !important;
+		}
+		table.display td.PD7{
+			padding:7px 7px !important;
+		}
+		table.display td.MW180,table.display th.MW180{
+			max-width:180px !important;
+		}
+
+		table.display td.W40,table.display th.W40{
+			width:40px !important;
+		}
+		table.display td.W90,table.display th.W90{
+			width:90px !important;
+		}
+		table.display td.W180,table.display th.W180{
+			width:180px !important;
+		}
+		table.display td.W220,table.display th.W220{
+			width:220px !important;
+		}
+		table.display td.W270,table.display th.W270{
+			width:270px !important;
+		}
+
+		/*その他*/
+		.btn {
+			display: inline-block;
+			font-size: 0.8rem;
+		}
+
+		#tkikan{
+			font-size:13px;
+		}
+
+		/*infoスペースのmarginつめる!*/
+		#b1{
+			margin: 0px 10px 26px 10px !important;
+		}
+
+		table.display td a.blue{
+			color:#17a2b8 !important;
+		}
+
+		/*input*/
+		input.form-control.ip{
+			padding:2px;
+			border:0px;
+			background:transparent;
+			_background:white;  
+			width:100%;
+			margin-top:0px;
+			text-align:center;
+			font-family:"Times New Roman";
+			font-size:16px;
+			box-shadow: none;
+			box-sizing: content-box;
+		}
+		input.form-control.ip2{
+			padding:2px;
+			border:0px;
+			background:transparent;
+			_background:white;  
+			width:100%;
+			margin-top:0px;
+			text-align:center;
+			font-family:"Times New Roman";
+			font-size:13px;
+			box-shadow: none;
+			box-sizing: content-box;
+		}
+
+		/*メニュー*/    
+		.btn-primary{color:#fff;background-color:#337ab7;border-color:#2e6da4}.btn-primary.focus,.btn-primary:focus{color:#fff;background-color:#286090;border-color:#122b40}.btn-primary:hover{color:#fff;background-color:#286090;border-color:#204d74}
+		.btn-info{color:#fff;background-color:#5bc0de;border-color:#46b8da}.btn-info.focus,.btn-info:focus{color:#fff;background-color:#31b0d5;border-color:#1b6d85}.btn-info:hover{color:#fff;background-color:#31b0d5;border-color:#269abc}
+
+		/*ダーク　テーブルセル*/
+		table.display td.sky{
+			color:#b2ebf2 !important;
+		}
+		table.display td.pink{
+			color:#f3e5f5 !important;
+		}
+		table.display td.lime{
+			color:#f9fbe7 !important;
+		}
+		table.display td.lavender,table.display td.lavender a{
+			color:lavender !important;
+		}
+		/*行カラー*/
+		table.display tr.purple {
+			background: #220000 !important;
+		}
+		table.display tr.gray {
+			_background: #D1D6ED !important;
+			background: #263238 !important;     
+		}
+		table.display tr.green{
+			background:#001100 !important;
+		}
+		.dataTables_info{
+			color:silver;
+		}
+		/*テーブル*/
+		table.display td {
+			color: silver !important;
+			border: #777 1px solid !important;
+			_font-weight:700;
+			font-size:14px !important;
+		}
+		table.dataTable td.BR {
+			border-right: 3px double #888 !important;
+		}
+		table.dataTable td input[type=number] {
+			color: #f8f8ff;
+		}
+
+		table.display td a.text-danger, .ok {
+			color: #d81b60 !important;
+		}
+
+		.dataTables_length {
+		    position: fixed !important;
+		    bottom: 0px !important;
+		    left: 130px !important;
+		    z-index: 8999;
+		    display: none;
+		}
+
+		div.dataTables_wrapper div.dataTables_filter input {
+		    width: 160px !important;
+		    display: none;
+		}
+
+		.dataTables_filter{
+		    display: none;			
+		}
+
+		table.dataTable.display tbody tr.odd>.sorting_1, table.dataTable.order-column.stripe tbody tr.odd>.sorting_1 {
+   		 	background-color: transparent;
+		}
+		table.dataTable.display tbody tr.even>.sorting_1, table.dataTable.order-column.stripe tbody tr.even>.sorting_1 {
+    		background-color: transparent;
+		}
+		</style>
+		<!--データテーブルここまで-->
+
+		<style>
+		.autocomplete-content.dropdown-content{
+			z-index:99999999;
+		}
+		.hide{
+			display:none;
+		}
+		</style>
+
+		<script>
+		//フォーム入力時テーブル消す
+		$(document).ready(function(){
+		    $('.ipp').on('focus', function() {
+		        //alert("d");
+		        $(".table_data").addClass("hide");
+		    });
+		});
+		</script>
+		<script>
+		// 部分リロード
+		/*function reloadHoge() {
+		  $.get(document.URL).done(function(data, textStatus, jqXHR) {
+		    const doc = new DOMParser().parseFromString(data, 'text/html');
+		    $('.display').html(doc.querySelector('.display').innerHTML);
+		  });
+		}
+		setInterval(reloadHoge, 5000);*/
+		</script>
+
+		<BODY><DIV class="container animated _fadeIn">
+
+			<DIV id=contents>
+
+				<form action="{$url}" method="post" enctype="multipart/form-data" class="animated fadeIn">
+
+				<h1><i class="material-icons">account_circle</i> {$_person[0]} 第{$nn}回練習会 会場{$_GET[k]}</h1>
+
+				</form>	
+
+				 <!--テーブル-->
+				 <form action="{$url}" method="post" enctype="multipart/form-data" class="table_data">
+					 <div class="row" style="margin-left: -10px;">
+					    <div class="col s12">
+					   	 <table id="1" class="display animated _fadeIn _flipInY _fadeInLeft fadeInDown" width="100%"></table>
+					    </div>
+					 </div>
+				 </form> 
+
+				 <div class="row" style='text-align:center;'>
+					<!--<button style="" class="btn waves-effect waves-light btn-large pulse" type="submit" name="action2" value=1>入力<i class="material-icons right">send</i></button>
+					<button style="margin-left:10px;" class="btn waves-effect waves-light btn-large pink darken-4" type="reset" value=1>リセット<i class="material-icons right">send</i></button>-->
+					<a href="index?k={$_GET[_k]}"><button style="margin-right:10px;" class="btn waves-effect waves-light btn-large blue-grey darken-2" type="button" name="" value=>戻る<!--<i class="material-icons right">send</i>--></button></a>
+				</div>	
+
+			</DIV>	 
+
+		</DIV></BODY>	
+
+
+EOM;
+	  }//end:function
+
+
+}//end:class
 ?>		  
